@@ -4,6 +4,8 @@
  * How the two layers stay aligned, always:
  * - The textarea never scrolls by itself. It is exactly as large as the highlighted pre, and both sit in one
  *   scroll box, so scrolling moves them together with no script involved and no lag.
+ * - Below 1000px wide, long lines soft-wrap in both layers, with the same width and the same wrapping rules.
+ *   The line numbers go away there, and positions are read from the highlight layer instead of the monospace grid.
  * - Both layers use one font face. Colors tell tokens apart. Bold and italic would pull in other font files,
  *   which can load late or be blocked, and their widths can differ. See editor.css.
  * - The tokenizer keeps every character of the text, so the layers always hold the same string.
@@ -225,6 +227,26 @@
   const coarse = () => (K.UI && K.UI.coarse ? K.UI.coarse() : matchMedia('(pointer: coarse)').matches);
   /* A tablet's on-screen keyboard has the full key set, and its docked console needs the bottom of the screen. */
   const isPhone = () => coarse() && window.innerWidth < 1000;
+  /** Where a column goes in a SELECT list, and the comma it needs. Outside a list it changes nothing. */
+  function listFit(value, s, e, text) {
+    const before = value.slice(0, s);
+    const m = /\bSELECT\b(?![\s\S]*\b(?:SELECT|FROM)\b)([\s\S]*)$/i.exec(before);
+    if (!m) return { s, t: text };
+    const list = m[1];
+    const count = (re) => (list.match(re) || []).length;
+    if (count(/\(/g) > count(/\)/g) || count(/\bCASE\b/gi) > count(/\bEND\b/gi)) return { s, t: text };
+    const tail = list.replace(/\s+$/, '');
+    const needsBefore = /[\w)"'\]]$/.test(tail) && !/\b(?:DISTINCT|ALL|AS)$/i.test(tail);
+    const after = value.slice(e);
+    const nextWord = /^\s*([\w."]+)/.exec(after);
+    const needsAfter = !!nextWord && !/^(?:FROM|WHERE|GROUP|HAVING|ORDER|LIMIT|UNION|AS)$/i.test(nextWord[1]);
+    let t = text;
+    let from = s;
+    if (needsBefore) { t = ', ' + t; from = s - (list.length - tail.length); }
+    if (needsAfter) t += ', ';
+    return { s: from, t };
+  }
+
   const runKeys = () => (K.UI && K.UI.runKeys ? K.UI.runKeys() : 'Ctrl Enter');
   const div = (cls) => { const d = document.createElement('div'); d.className = cls; return d; };
   let uid = 0;
@@ -261,7 +283,9 @@
     pre.setAttribute('aria-hidden', 'true');
     const ta = document.createElement('textarea');
     ta.className = 'ed-ta';
-    ta.wrap = 'off';
+    const wrapQuery = matchMedia('(max-width: 999px)');
+    const wrapped = () => wrapQuery.matches;
+    ta.wrap = wrapped() ? 'soft' : 'off';
     ta.rows = 1;
     ta.spellcheck = false;
     ta.placeholder = o.placeholder == null ? 'Write your query here.' : o.placeholder;
@@ -305,9 +329,34 @@
       for (let i = nl + 1; i < before.length; i++) col += before[i] === '\t' ? tabSize - (col % tabSize) : 1;
       return { line, col };
     };
+    /** With soft wrap the grid cannot say where a character is, but the highlight layer holds the same text in the same place. */
+    const placeWrapped = (offset, m) => {
+      const walk = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+      let left = offset, node = null, last = null;
+      while ((node = walk.nextNode())) {
+        last = node;
+        if (left < node.length) break;
+        left -= node.length;
+      }
+      if (!node) return null;
+      const range = document.createRange();
+      range.setStart(node, left);
+      range.setEnd(node, left + 1);
+      const rects = range.getClientRects();
+      const r = rects[rects.length - 1];
+      if (!r || !r.height) return null;
+      const c = code.getBoundingClientRect();
+      const line = Math.max(0, Math.round((r.top + r.height / 2 - c.top - m.padT - m.lh / 2) / m.lh));
+      return { x: r.left - c.left, y: m.padT + line * m.lh, lh: m.lh, ch: m.ch, line, col: 0 };
+    };
     /** Position of a text offset, in the coordinates of the code layer. */
     const place = (offset) => {
-      const m = metrics(), g = gridOf(offset);
+      const m = metrics();
+      if (wrapped() && pre.offsetParent) {
+        const p = placeWrapped(offset, m);
+        if (p) return p;
+      }
+      const g = gridOf(offset);
       return { x: m.padL + g.col * m.ch, y: m.padT + g.line * m.lh, lh: m.lh, ch: m.ch, line: g.line, col: g.col };
     };
     const clientRectOf = (a, b) => {
@@ -322,8 +371,10 @@
       const left = p.x;
       const roomL = scroller.scrollLeft + p.ch * 2;
       const roomR = scroller.scrollLeft + scroller.clientWidth - gw - p.ch * 3;
-      if (left < roomL) scroller.scrollLeft = Math.max(0, left - p.ch * 8);
-      else if (left > roomR) scroller.scrollLeft = left - scroller.clientWidth + gw + p.ch * 8;
+      if (!wrapped()) {
+        if (left < roomL) scroller.scrollLeft = Math.max(0, left - p.ch * 8);
+        else if (left > roomR) scroller.scrollLeft = left - scroller.clientWidth + gw + p.ch * 8;
+      }
       const top = p.y, bot = p.y + p.lh, pad = parseFloat(getComputedStyle(ta).paddingTop) || 0;
       if (top < scroller.scrollTop + 2) scroller.scrollTop = Math.max(0, top - pad);
       else if (bot > scroller.scrollTop + scroller.clientHeight - 2) scroller.scrollTop = bot - scroller.clientHeight + pad;
@@ -366,7 +417,7 @@
       root.classList.toggle('on-blank', ix >= 0);
     };
     const paintCurrentLine = (focused) => {
-      const line = gridOf(ta.selectionEnd).line;
+      const line = wrapped() ? place(ta.selectionEnd).line : gridOf(ta.selectionEnd).line;
       if (line !== curLine) {
         const old = gutter.children[curLine];
         if (old) old.classList.remove('on');
@@ -627,6 +678,7 @@
         bar.setAttribute('aria-label', 'Insert a word');
         const sugg = div('ed-keys ed-keys-sugg');
         const keys = div('ed-keys');
+        const row = div('ed-keyrow');
         const next = document.createElement('button');
         next.type = 'button';
         next.className = 'ed-key ed-key-next';
@@ -641,12 +693,24 @@
           b.dataset.ins = ins;
           keys.append(b);
         }
-        bar.append(sugg, keys);
+        row.append(sugg, keys);
+        /* With the bottom bar hidden behind the keyboard, Run comes along here. */
+        if (o.runKey && o.onRun) {
+          const run = document.createElement('button');
+          run.type = 'button';
+          run.className = 'ed-key ed-key-run';
+          run.textContent = 'Run';
+          run.dataset.run = '1';
+          run.setAttribute('aria-label', 'Run the query');
+          row.append(run);
+        }
+        bar.append(row);
         /* Holding the focus in the textarea keeps the on-screen keyboard up while a key is tapped. */
         bar.addEventListener('mousedown', (e) => e.preventDefault());
         bar.addEventListener('click', (e) => {
           const b = e.target.closest('button');
           if (!b) return;
+          if (b.dataset.run) { acClose(); if (!ta.readOnly) o.onRun(); return; }
           if (b.dataset.i != null) { ac.ix = Number(b.dataset.i); acAccept(); return; }
           if (b.dataset.next) { const s = ta.selectionEnd; const i = blanks.findIndex(([a]) => a >= s); selectBlank(i < 0 ? 0 : i, { focus: true }); return; }
           ta.focus({ preventScroll: true });
@@ -690,6 +754,9 @@
       /** Scrolls the page when the caret would sit behind the key bar or the keyboard. */
       keepCaretClear() {
         if (!this.shown || document.activeElement !== ta) return;
+        /* A locked page cannot scroll, and the editor already ends above the key bar, so its own scroll box does the work. */
+        const page = document.scrollingElement;
+        if (page && page.scrollHeight <= window.innerHeight + 1) { reveal(ta.selectionEnd); return; }
         const vv = window.visualViewport;
         const bottom = (vv ? vv.offsetTop + vv.height : window.innerHeight);
         const barTop = this.el.getBoundingClientRect().top;
@@ -958,6 +1025,7 @@
       on(scroller, 'scroll', onScroll, { passive: true }),
       on(window, 'scroll', onOuterScroll, { capture: true, passive: true }),
       on(window, 'resize', onResize),
+      on(wrapQuery, 'change', () => { ta.wrap = wrapped() ? 'soft' : 'off'; paint(); syncSelection({ noReveal: true }); }),
       /* If a screen is torn down without calling destroy, nothing of the editor stays on the page. */
       on(window, 'hashchange', () => { setTimeout(() => { if (!root.isConnected) api.destroy(); }, 60); }),
       on(gutter, 'mousedown', (e) => { e.preventDefault(); ta.focus({ preventScroll: true }); })
@@ -993,7 +1061,7 @@
       get blankCount() { return blanks.length; },
       hasBlanks() { return blanks.length > 0; },
       /** At the caret or over the selection, then on to the next blank. Before any caret exists, the first blank takes it. */
-      insert(text) {
+      insert(text, opts) {
         if (ta.readOnly) return;
         let t = straighten(String(text));
         let s = ta.selectionStart, e = ta.selectionEnd;
@@ -1002,6 +1070,12 @@
           else { s = e = ta.value.length; }
         }
         touched = true;
+        /* opts.list: a column going into a SELECT list brings its comma, so it never turns the one before it into an alias. */
+        if (opts && opts.list) {
+          const fit = listFit(ta.value, s, e, t);
+          s = fit.s;
+          t = fit.t;
+        }
         if (/^\w/.test(t) && isWord(ta.value[s - 1])) t = ' ' + t;
         if (/\w$/.test(t) && isWord(ta.value[e])) t += ' ';
         if (wantsFocus()) ta.focus({ preventScroll: true });
@@ -1081,6 +1155,8 @@
         keybar.paint();
       },
       caretRect() { return clientRectOf(ta.selectionEnd); },
+      /** Scrolls the editor's own box to the caret or the selected blank. */
+      revealCaret() { reveal(ta.selectionEnd); },
       refresh() {
         paint();
         syncSelection({ noReveal: true });

@@ -134,10 +134,8 @@
 .sp-msg:empty{display:none}
 .sp-form-note{margin-top:9px;font-size:14.5px;line-height:1.42;color:var(--text-2)}
 
-/* Phone bar */
-.sp-bar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:55;display:flex;align-items:center;gap:10px;padding:8px max(var(--gutter),env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(var(--gutter),env(safe-area-inset-left,0px));background:var(--bar-solid);border-top:1px solid var(--hair)}
-.sp-barrun{min-width:132px}
-.sp-back{min-height:44px}
+/* Phone only: pane tabs, the slip above the editor, and the Run bar */
+.sp-ptabs,.sp-phslip,.sp-bar{display:none}
 .sp-col,.sp-joinbtn{min-height:44px;align-items:center}
 .sp-t-acts .plain{min-height:44px}
 .sp-t summary{padding-block:11px}
@@ -147,7 +145,6 @@
 /* Workbench at 1000px and wider */
 @media (min-width:1000px){
   .sp-page{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:0 22px;padding-top:12px;padding-bottom:64px}
-  .sp-bar{display:none}
   .sp-console .mc-act .sp-run{display:inline-flex}
   .sp-grow{display:inline-flex}
   .sp-rail-body{overflow:auto;scrollbar-width:thin;scrollbar-color:var(--hair-2) transparent;padding-right:2px}
@@ -175,16 +172,85 @@
   .sp-out.stack .ledger{--lg-max:210px}
   .sp-idle{flex:1 1 auto;min-height:0}
 }
+/* Phone: the same pattern as a mission. One pane at a time, the page never scrolls, and Run stays put. */
 @media (max-width:999px){
-  /* Anything scrolled into view stops above the bottom Run bar. */
-  html[data-route="scratchpad"]{scroll-padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
-  .sp-example{font-size:14px}
-  .sp-out .ledger{--lg-max:58dvh}
-  .sp-out{scroll-margin-top:calc(var(--topbar-h) + 10px)}
-  .sp-console{scroll-margin-top:calc(var(--topbar-h) + 10px)}
-  .sp-console{--ed-max-h:36dvh}
+  html[data-route="scratchpad"] body{height:var(--vvh,100dvh);min-height:0;overflow:hidden}
+  html[data-route="scratchpad"] #view{flex:1 1 auto;min-height:0;overflow:hidden}
+  html[data-route="scratchpad"][data-keybar="up"] body{padding-bottom:var(--keybar-h,0px)}
+  .sp-page{flex:1 1 auto;min-height:0;height:100%;display:flex;gap:0;padding:0;max-width:none}
+  .sp-work{display:contents}
+
+  .sp-ptabs{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--ground-2);border-bottom:1px solid var(--hair)}
+  .sp-ptabs button{position:relative;height:46px;font-size:16px;font-weight:500;color:var(--text-2);-webkit-tap-highlight-color:transparent}
+  .sp-ptabs button[aria-selected="true"]{color:var(--text);font-weight:600;background:var(--ground)}
+  .sp-ptabs button[aria-selected="true"]::after{content:"";position:absolute;left:14%;right:14%;bottom:-1px;height:2px;background:var(--verd)}
+  .sp-ptabs button:disabled{color:var(--text-3);opacity:.55;cursor:default}
+  .sp-ptabs button:focus-visible{outline-offset:-4px}
+
+  .sp-head,.sp-console,.sp-out,.sp-rail{display:none}
+  .sp-page[data-pane="query"] .sp-console{display:flex;flex:1 1 0;min-height:0;overflow:hidden;border-radius:0;box-shadow:none}
+  .sp-page[data-pane="result"] .sp-out{display:flex;flex:1 1 0;min-height:0;overflow:auto;gap:0}
+  .sp-page[data-pane="tables"] .sp-head{display:flex;flex:none;padding:6px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--hair);background:var(--ground)}
+  .sp-page[data-pane="tables"] .sp-rail{display:flex;flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:10px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+  .sp-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .sp-practice{font-size:15px}
+  .sp-head .ghost{min-height:44px;padding:0 11px;font-size:15px}
+
+  /* Query */
+  .sp-console .mc-bar{flex:none;min-height:36px;padding:3px 14px}
   .sp-console .mc-bar b{white-space:normal}
-  .sp-console .mc-note{display:none}
+  .sp-console .mc-note,.sp-console .mc-act,.sp-grow{display:none}
+  .sp-example{flex:none;padding:6px 14px;font-size:14px;line-height:1.34}
+  .sp-edhost{flex:1 1 0;min-height:0;cursor:text}
+  .sp-edhost .ed{height:100%}
+  .sp-edhost .ed-scroll{height:100%;max-height:none}
+  .sp-phslip{flex:none;display:block;max-height:46%;overflow:auto;overscroll-behavior:contain;padding:10px 10px 8px;background:var(--mc);border-bottom:1px solid var(--mc-hair)}
+  .sp-phslip[hidden]{display:none}
+  .sp-phslip .helpslip::before{display:none}
+  .sp-phslip .helpslip{margin:0;padding:10px 13px;font-size:16px}
+  .sp-console:has(.sp-phslip:not([hidden])) .sp-example{display:none}
+  .sp-note p{margin:0}
+
+  /* Result: paper edge to edge */
+  .sp-out .ledger{--lg-max:none;flex:1 1 auto;min-height:0;box-shadow:none}
+  .sp-out.stack .ledger{--lg-max:46dvh;flex:none;margin-bottom:10px}
+  .sp-out .sp-solo{flex:none;box-shadow:none}
+  .sp-idle{flex:1 1 auto;max-height:none;min-height:0;margin:14px 16px;font-size:16px}
+
+  /* Tables */
+  .sp-tabs{display:none}
+  .sp-rail-body{flex:none}
+  .sp-input{font-size:16px}
+  .sp-hint{font-size:15px}
+  .sp-col,.sp-joinbtn{font-size:15.5px}
+  .sp-col code,.sp-joinbtn code{font-size:14.5px}
+  .sp-t summary{min-height:48px}
+  .sp-t-d{font-size:15px}
+  .sp-t-acts .plain{font-size:15px}
+  .sp-joinadd{opacity:1}
+  .sp-worknote{font-size:14px}
+
+  /* The Run bar */
+  .sp-bar{flex:none;display:flex;align-items:center;gap:10px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:var(--ground);border-top:1px solid var(--hair)}
+  .sp-libbtn{flex:none;min-height:50px}
+  .sp-barrun{flex:1 1 0;min-height:50px}
+  .sp-barrun:active{translate:0 1px}
+
+  /* The sheet: History, Saved and the quiet actions */
+  .sp-lib .sheet-group{margin-bottom:12px}
+  .sp-lib .menu-row:first-child{border-top:0}
+  .sp-libseg{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:10px}
+  .sp-libseg button{height:44px}
+  .sp-lib .sp-item{min-height:56px}
+  .sp-lib .sp-item-q{font-size:14px}
+  .sp-lib .sp-item-m,.sp-lib .sp-none{font-size:15px}
+  .sp-del{width:44px;height:44px}
+
+  /* The keyboard is up: the editor gets the room, and the key bar has its own Run. */
+  html[data-keybar="up"] .sp-ptabs,html[data-keybar="up"] .sp-bar,html[data-keybar="up"] .sp-example{display:none}
+}
+@media (max-width:999px) and (max-height:560px){
+  html[data-route="scratchpad"][data-keybar="up"] .top{display:none}
 }
 
 /* A short window: the example sentence gives way to a tag, and the head tightens. */
@@ -197,17 +263,6 @@
   .sp-console .mc-act{padding:6px 14px}
   .sp-console .mc-bar{min-height:34px;padding-block:2px}
 }
-@media (max-width:640px){
-  .sp-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px}
-  .sp-head-t{display:contents}
-  .sp-head .sp-practice{grid-row:2;grid-column:1/-1}
-  .sp-head .ghost{grid-row:1;grid-column:2;padding:0 11px;font-size:14.5px}
-  .sp-console .mc-act{gap:8px;padding:8px 10px}
-  .sp-console .mc-act .ghost{padding:0 10px;font-size:15px;min-height:44px}
-  .sp-console .mc-act .plain{min-height:44px}
-  .sp-console .mc-act .sp{display:none}
-}
-
 /* =====================================================================
    Review
    ===================================================================== */
@@ -288,16 +343,45 @@
 .rv-slip-stamp{position:absolute;right:16px;bottom:8px;width:104px;height:104px;pointer-events:none}
 .rv-next{margin-top:14px;font-size:16px;color:var(--text-2);max-width:62ch}
 
+/* Phone: a running review works like a mission, under its own strip, with no tab bar and no site header. */
+.rv-back{display:none}
+@media (max-width:999px){
+  html[data-route="review"][data-reviewing] body{height:var(--vvh,100dvh);min-height:0;overflow:hidden}
+  html[data-route="review"][data-reviewing] .top{display:none}
+  html[data-route="review"][data-reviewing] #view{flex:1 1 auto;min-height:0;overflow:hidden}
+  .rv-flow{height:100%}
+  .rv-strip{flex-wrap:nowrap;gap:6px 8px;min-height:44px;padding:env(safe-area-inset-top,0px) 12px 0 4px}
+  .rv-back{display:grid;width:44px;height:44px;margin-right:-4px}
+  .rv-pos{font-size:15.5px}
+  .rv-giveup{min-height:44px;font-size:15px}
+  .rv-host{--ms-h:calc(var(--vvh,100dvh) - 44px - env(safe-area-inset-top,0px))}
+
+  html[data-route="review"]:not([data-reviewing]){--toast-lift:calc(var(--tabbar-h) + 84px)}
+  /* The one big action waits in a bar above the tabs, in thumb reach. */
+  .rv-start,.rv-sum{padding-bottom:calc(84px + 12px)}
+  .rv-start-act{position:fixed;left:0;right:0;bottom:var(--shell-bottom);z-index:40;margin:0;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:var(--ground);border-top:1px solid var(--hair)}
+  .rv-start-act .rv-go{width:100%;justify-content:space-between;min-height:56px;font-size:16.5px}
+  .rv-calm-act{margin-top:16px}
+  .rv-calm-act .rv-go,.rv-calm>.rv-go{width:100%;justify-content:space-between}
+  .rv-calm>.rv-go{margin-top:14px}
+  .rv-shelf{margin-top:24px}
+  .rv-coming{margin-top:24px}
+  .rv-sub{font-size:16px}
+  .rv-box-l{font-size:15px}
+  .rv-due-t small{font-size:15px}
+  .rv-lines li{font-size:15.5px}
+  .rv-next{font-size:16px}
+  .rv-slip{padding:12px 13px 10px}
+  .rv-slip-t td.r{font-size:14px}
+}
 @media (max-width:640px){
-  .rv-due li{grid-template-columns:52px minmax(0,1fr)}
-  .rv-due-h{grid-column:2}
+  .rv-due li{grid-template-columns:44px minmax(0,1fr) auto;gap:2px 10px}
   .rv-boxes{grid-template-columns:minmax(0,1fr)}
   .rv-boxes li{flex-direction:row;align-items:center;gap:14px;padding:9px 12px;min-height:44px}
   .rv-boxes li+li{border-left:0;border-top:1px solid var(--hair)}
   .rv-box-n{min-width:32px}
   .rv-lines li{grid-template-columns:minmax(0,1fr) auto}
   .rv-line-t{grid-column:1/-1}
-  .rv-slip{padding:12px 13px 10px}
   .rv-slip-t thead{display:none}
   .rv-slip-t tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 10px;padding:8px 0;border-bottom:1px solid var(--paper-rule)}
   .rv-slip-t td,.rv-slip-t tbody tr:last-child td{border:0;padding:0}
@@ -306,7 +390,6 @@
   .rv-giveup{min-height:44px}
 }
 @media (pointer:coarse){.rv-giveup{min-height:44px}}
-@media (max-width:999px){.rv-strip{flex-wrap:nowrap}}
 @media (max-width:430px){.rv-pips{display:none}}
 
 /* =====================================================================
@@ -430,12 +513,44 @@
   .cs-main{max-width:1180px}
   .cs{padding-top:clamp(18px,3vh,30px)}
 }
+/* Phone: the search and the section chips stay in reach, and everything else scrolls under them. */
+@media (max-width:999px){
+  .cs{display:flex;flex-direction:column;padding-top:12px}
+  .cs-grid,.cs-main{display:contents}
+  .cs .tl-head{margin-bottom:6px}
+  .cs-find{order:1;top:calc(var(--topbar-h) + env(safe-area-inset-top,0px));z-index:21;margin:0 -16px;padding:6px 16px 4px;--cs-find-h:58px}
+  .cs-find-i{left:29px;top:calc(50% + 1px)}
+  .cs-nav{order:2;position:sticky;top:calc(var(--topbar-h) + env(safe-area-inset-top,0px) + 58px);z-index:20;margin:0 -16px;padding:4px 16px 8px;background:var(--ground);border-bottom:1px solid var(--hair)}
+  .cs-found,.cs-none,.cs-sec{order:3}
+  .cs-found{padding-top:8px;font-size:14.5px}
+  .cs-sec{padding-top:18px;scroll-margin-top:104px}
+  .cs-sec>h2{font-size:23px}
+  .cs-nav button{font-size:15.5px;padding:0 13px}
+  .cs-nav button[aria-current]{background:var(--ground-4);box-shadow:inset 0 0 0 1px var(--hair-2)}
+  .cs-input{font-size:16px}
+  .cs-pat-note,.cs-pat-note .plain{font-size:16px}
+  .cs-pat .codeblock pre{font-size:14px}
+  .cs-level summary{min-height:60px}
+  .cs-level-t b{font-size:17px}
+  .cs-level-t small{font-size:14.5px}
+  .cs-xl li,.cs-gl dt,.cs-gl dd{font-size:16px}
+  .cs-still,.cs-still .plain{font-size:16px}
+  .cs-kol{font-size:15px}
+  .cs-kol th{font-size:14px}
+  .cs-dt{font-size:15px}
+  .cs-dt code{font-size:14px}
+  /* Exact syntax stays on one line, and the table scrolls inside its own box. */
+  .cs-dt,.cs-dialect .rich-tbl table{table-layout:auto;width:max-content;min-width:100%}
+  .cs-dt code{white-space:nowrap;overflow-wrap:normal}
+  .cs-dt tbody th{min-width:112px;max-width:150px}
+  /* The row's name stays in view while its code scrolls. */
+  .cs-dt tbody th,.cs-dt thead th:first-child{position:sticky;left:0;z-index:1;background:var(--ground)}
+  .cs-seg button{font-size:14.5px}
+}
 @media (max-width:640px){
   .cs-empty{flex-direction:column;gap:10px;padding:14px}
   .cs-xl li{grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 2px}
   .cs-xl-arrow{display:none}
-  .cs-find{padding:6px 0}
-  .cs-input{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){
   .cs-chev,.sp-t summary::after{transition:none}

@@ -23,6 +23,7 @@
         noTarget: true,
         solution: `SELECT * FROM branches;`,
         hints: [`The Run button is right under the editor.`, `You can also press Ctrl+Enter, or Cmd+Enter on a Mac.`],
+        phone: [[`The Run button is right under the editor.`, `The Run button is at the bottom of the screen.`], [`You can also press Ctrl+Enter, or Cmd+Enter on a Mac.`, `With the keyboard open, the Run key sits above it.`]],
         win: `That was a real SQL query. You asked for one table, and the database answered with 12 rows, one per branch.`,
         pattern: { sql: `SELECT *\nFROM table_name;`, note: 'Show a whole table' }
       },
@@ -49,6 +50,7 @@
         newIdea: 'The word after FROM picks the table.',
         from: 'Team lead',
         teach: `<p>The word after <code>FROM</code> is the [[table]] you want. Changing it is like clicking a different sheet tab.</p><p>This bank has nine tables. The panel next to the editor shows the one you need.</p>`,
+        phone: [[`The panel next to the editor shows the one you need.`, `The Tables button above the editor shows the one you need.`]],
         ex: [['SELECT *', 'Show every column'], ['FROM collectors', 'from the collectors table'], ['LIMIT 3;', 'and stop after 3 rows, to keep this preview short.']],
         bridge: 'Like clicking a different sheet tab at the bottom of a workbook.',
         task: `Who works in collection here? Change <code>branches</code> to <code>collectors</code> and press Run.`,
@@ -125,6 +127,7 @@
         newIdea: 'Names must match exactly.',
         from: 'Your future self',
         teach: `<p>The database cannot guess. If you misspell a column name, it says the column does not exist. The panel next to the editor lists the correct names, and you can click one to add it to your query.</p>`,
+        phone: [[`The panel next to the editor lists the correct names, and you can click one to add it to your query.`, `The Tables button above the editor lists the correct names, and you can tap one to add it to your query.`]],
         bridge: 'Like a named range in Excel: one wrong letter and it fails.',
         task: `Someone misspelled a column. Run it, read the error, and fix the name.`,
         starter: `SELECT branch_nama, city\nFROM branches;`,

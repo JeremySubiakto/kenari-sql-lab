@@ -272,7 +272,7 @@
         dueDd.append(due
           ? el('a', { class: 'plain', href: '#/review', text: 'Review now' })
           : el('span', { text: 'today' }));
-        cell('Reviews due', dueDd);
+        cell('Reviews due', dueDd, 'hm-acct-due' + (due ? '' : ' is-zero'));
       }
       acctHost.replaceChildren(dl);
     }
@@ -319,6 +319,36 @@
     const weave = el('div', { class: 'weave hm-weave', 'aria-hidden': 'true' }, el('i'));
     const hero = el('section', { class: 'hm-hero', 'aria-labelledby': 'hmPromise', dataset: { mode } },
       gl, el('div', { class: 'hm-hero-in' }, left, right), weave);
+
+    /* ---------- Phone: Home ends in two teasers, and each opens its own tab ---------- */
+    const teasers = el('div', { class: 'hm-teasers' });
+    let teaserStop = null;
+    function paintTeasers() {
+      const cur = State.current();
+      const lvl = cur ? cur.level : K.levels[K.levels.length - 1];
+      const p = State.levelProgress(lvl.n);
+      if (teaserStop) teaserStop();
+      const mr = miniRoute({ link: false });
+      teaserStop = () => mr._stop && mr._stop();
+      const go = () => el('span', { class: 'hm-tz-go', html: UI.icons.right });
+      const jCard = el('a', { class: 'hm-tz hm-tz-j', href: '#/journey', 'aria-label': 'Open the Journey. ' + (cur ? 'You are on Level ' + lvl.n + ', ' + lvl.title + '.' : 'Every level is stamped.') },
+        el('span', { class: 'hm-tz-h' }, el('b', { text: 'The journey' }), go()),
+        mr,
+        el('span', { class: 'hm-tz-s', text: cur ? 'Level ' + lvl.n + ', ' + lvl.title + ': ' + p.done + ' of ' + p.total + ' cleared' : 'Every level is stamped' }));
+      const lines = State.passbook().filter((l) => l.kind !== 'level').slice(-2);
+      const pCard = el('a', { class: 'paper hm-tz hm-tz-p', href: '#/passbook', 'aria-label': 'Open your passbook. Saldo ' + State.doneCount() + '.' },
+        el('span', { class: 'hm-tz-h' }, el('b', { text: 'Your passbook' }), go()),
+        lines.length
+          ? el('span', { class: 'hm-tz-lines' }, lines.map((l) => el('span', { class: 'hm-tz-l' },
+            el('span', { class: 'hm-tz-d', text: UI.stampDate(l.date, true).slice(0, 6) }),
+            el('span', { class: 'hm-tz-t' }, el('b', { text: l.id }), ' ' + l.title),
+            el('span', { class: 'hm-tz-b', text: String(l.balance) }))))
+          : el('span', { class: 'hm-tz-s', text: 'Each cleared mission prints a line here.' }),
+        el('span', { class: 'hm-tz-eoe' }, el('span', { text: 'E. & O.E.' }), el('span', { class: 'hm-tz-saldo', text: 'Saldo ' + State.doneCount() })));
+      teasers.replaceChildren(jCard, pCard);
+      mr._draw();
+    }
+    stops.push(() => teaserStop && teaserStop());
 
     /* ---------- Journey ---------- */
     const journey = el('section', { class: 'hm-sec hm-journey', id: 'journey', 'aria-labelledby': 'hmJh' });
@@ -431,7 +461,10 @@
               el('span', { class: 'hm-jl-title', text: L.title }),
               el('span', { class: 'hm-jl-rank', html: (cleared ? 'Rank earned: ' : 'Rank: ') + '<b>' + UI.esc(L.rank) + '</b>' }),
               el('span', { class: 'hm-jl-tag', text: L.tagline }),
-              el('span', { class: 'hm-jl-prog' }, el('span', { class: 'hm-pips', 'aria-hidden': 'true', html: pips }), el('span', { text: p.done + ' of ' + p.total })))));
+              el('span', { class: 'hm-jl-prog' },
+                el('span', { class: 'hm-pips', 'aria-hidden': 'true', html: pips }),
+                el('span', { class: 'hm-bar hm-jl-bar', 'aria-hidden': 'true' }, el('i', { style: { width: Math.round(p.done / Math.max(1, p.total) * 100) + '%' } })),
+                el('span', { text: p.done + ' of ' + p.total })))));
       };
       const groupA = levels.filter((L) => L.n <= 3);
       const groupB = levels.filter((L) => L.n > 3);
@@ -663,12 +696,13 @@
       stops.push(() => pauseIO.disconnect());
     }
 
-    const root = el('div', { class: 'hm' }, hero, journey, passbook, foot);
+    const root = el('div', { class: 'hm' }, hero, teasers, journey, passbook, foot);
     container.append(root);
 
     paintSlip();
     paintAcct();
     paintMiniRoute();
+    paintTeasers();
     paintJourney();
     const firstBook = paintPassbook();
 
@@ -678,7 +712,9 @@
       value: STARTER,
       lines: { min: 1, max: 6 },
       autocomplete: true,
-      keybar: false,
+      /* Below 1000px the key bar brings its own Run key, so Run is never cut by the keyboard. */
+      keybar: !UI.isWide(),
+      runKey: !UI.isWide(),
       label: 'Live SQL query',
       onRun: () => runHero(),
       onInput: () => {
@@ -690,6 +726,10 @@
     });
     stops.push(() => { try { ed.destroy(); } catch (e) { /* already gone */ } });
     if (ed.refresh) requestAnimationFrame(() => { if (!gone) ed.refresh(); });
+    /* On a phone, the hero is hidden on the Journey and Passbook tabs, so the editor measures again on the way back. */
+    const onSection = () => { if (!gone && ed.refresh) ed.refresh(); };
+    document.addEventListener('kenari:section', onSection);
+    stops.push(() => document.removeEventListener('kenari:section', onSection));
 
     overBtn.addEventListener('click', () => {
       if (ed.replaceAll) ed.replaceAll(STARTER);
@@ -769,6 +809,14 @@
       return b;
     }
 
+    /** On a phone, the page moves so the paper is in view, just under the header. */
+    function revealPaper() {
+      if (UI.isWide()) return;
+      const topH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 48;
+      /* Measured from the feed, because the paper itself is mid-animation. */
+      window.scrollTo({ top: feed.getBoundingClientRect().top + window.scrollY - topH - 8, behavior: UI.motionOK() ? 'smooth' : 'auto' });
+    }
+
     /** Line-feed: the paper comes down out of the slot in steps, while its rows print. */
     function printPaper(node, led) {
       feed.replaceChildren(node);
@@ -783,6 +831,7 @@
       if (printing) { if (finishEarly) finishEarly(); return; }
       running = true;
       runBtn.classList.add('used');
+      if (!UI.isWide() && ed.blur) ed.blur();
       UI.announce('');
       clearHelp();
       if (ed.clearError) ed.clearError();
@@ -896,11 +945,13 @@
         printPaper(sheet, null);
         UI.announce(title);
         feed.classList.add('printed');
+        revealPaper();
         return;
       }
       const led = ledgerFor(r);
       led.prepend(b);
       printPaper(led, led);
+      revealPaper();
       led.printed.then(() => { if (!gone) feed.classList.add('printed'); });
       UI.announce(title);
       trEl.hidden = ed.value.trim() !== STARTER;
@@ -966,16 +1017,14 @@
             runBtn.classList.remove('canary');
             paintAcct();
             const slip = paintSlip();
+            paintTeasers();
             paintJourney();
             paintPassbook();
             UI.anim(slip, [{ transform: 'translateY(4px)', opacity: .4 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'ease-out' });
             slip.focus({ preventScroll: true });
             UI.announce('Stamped. Mission ' + lesson.id + ' cleared. Saldo ' + outcome.balance + '. That was a real query. Now change branches to collectors.');
             /* On a phone, bring the stamped paper and the next button into view together. */
-            if (window.innerWidth < 1000) {
-              const top = led.getBoundingClientRect().top + window.scrollY - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h') || 52) - 10;
-              window.scrollTo({ top, behavior: UI.motionOK() ? 'smooth' : 'auto' });
-            }
+            revealPaper();
             if (outcome.levelCleared) setTimeout(() => { if (!gone) rankUp(outcome.levelCleared); }, 1400);
           }
         });
@@ -1079,6 +1128,7 @@
       paintSlip();
       paintAcct();
       paintMiniRoute();
+      paintTeasers();
       paintJourney();
       paintPassbook();
     };

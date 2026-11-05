@@ -158,12 +158,9 @@
           }
         }
       }
-      if (String(l.starter || '').includes(HUMAN_MARK)) {
-        humanTodos++;
-        check(l.id === '1.1', l.id, 'the one human mark belongs to Mission 1.1');
-      }
+      if (String(l.starter || '').includes(HUMAN_MARK)) humanTodos++;
     }
-    check(humanTodos === 1, 'all', 'there must be exactly one human mark in the starters, found ' + humanTodos);
+    check(humanTodos === 0, 'all', 'starters must not hold a leftover author to-do mark, found ' + humanTodos);
   }
 
   /* ---------- Rich text: tokens turn into controls ---------- */

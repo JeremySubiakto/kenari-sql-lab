@@ -130,6 +130,8 @@
       el('h2', { id: 'cs-h-dialects', tabindex: '-1' }, 'Other databases at work', dialectCount),
       el('p', { class: 'cs-lead', text: 'This lab runs SQLite, and most of what you learn here carries over. These are the places where other products write the same thing differently.' }),
       el('div', { class: 'cs-dialect' }, seg, dt));
+    /* On a phone the code keeps its exact shape on one line, and the table scrolls inside its own box. */
+    if (!UI.isWide()) UI.scrollTable(dt);
 
     /* ---------- Page ---------- */
     const SECTIONS = [
@@ -143,7 +145,8 @@
       const b = el('button', {
         type: 'button', 'data-key': s.key,
         onClick: () => {
-          s.node.scrollIntoView({ block: 'start', behavior: UI.motionOK() ? 'smooth' : 'auto' });
+          /* The sheet is very long on a phone, so a chip jumps there at once. */
+          s.node.scrollIntoView({ block: 'start', behavior: UI.motionOK() && UI.isWide() ? 'smooth' : 'auto' });
           const h = s.node.querySelector('h2');
           if (h) h.focus({ preventScroll: true });
         }
@@ -168,11 +171,10 @@
     const main = el('div', { class: 'cs-main' },
       el('div', { class: 'cs-find' }, el('span', { class: 'cs-find-i', html: FIND_ICON }), input),
       found, none, patterns, excel, glossary, dialects);
-    const page = el('div', { class: 'wrap cs' },
-      el('header', { class: 'tl-head' },
-        el('h1', { class: 'page-title', text: 'Cheat sheet' }),
-        el('p', { class: 'page-lead', text: lead })),
-      el('div', { class: 'cs-grid' }, nav, main));
+    const head = el('header', { class: 'tl-head' },
+      el('h1', { class: 'page-title', text: 'Cheat sheet' }),
+      el('p', { class: 'page-lead', text: lead }));
+    const page = el('div', { class: 'wrap cs' }, head, el('div', { class: 'cs-grid' }, nav, main));
     container.append(page);
 
     /* ---------- Search ---------- */
@@ -267,6 +269,11 @@
         for (const s of SECTIONS) s.node.hidden = !(s.key === 'patterns' && anyStill);
       }
       paintHighlight(terms);
+      /* On a phone, the matches start right under the sticky search, wherever the page had scrolled to. */
+      if (terms.length && !UI.isWide()) {
+        const topH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 48;
+        window.scrollTo(0, Math.max(0, head.getBoundingClientRect().bottom + window.scrollY - topH));
+      }
     };
     let debounce = 0;
     input.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(apply, 70); });
@@ -291,8 +298,11 @@
           if (!e.isIntersecting) continue;
           const s = SECTIONS.find((x) => x.node === e.target);
           navLinks.forEach((b) => (b === s.navB ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+          /* On a phone the chips scroll sideways, so the current one stays in view. */
+          if (!UI.isWide()) nav.scrollTo({ left: s.navB.offsetLeft - (nav.clientWidth - s.navB.offsetWidth) / 2, behavior: UI.motionOK() ? 'smooth' : 'auto' });
         }
-      }, { rootMargin: '-20% 0px -70% 0px' });
+      /* On a phone the mark follows a thin line just under the sticky search and chips. */
+      }, { rootMargin: UI.isWide() ? '-20% 0px -70% 0px' : '-172px 0px -' + Math.max(0, window.innerHeight - 176) + 'px 0px' });
       SECTIONS.forEach((s) => spy.observe(s.node));
     }
 

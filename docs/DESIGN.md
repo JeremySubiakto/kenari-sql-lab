@@ -43,7 +43,7 @@ Two panes under a slim header. Each pane scrolls on its own, and the page itself
 
 ## The printout
 
-Paper holds, top to bottom: a **verdict band**, then **rows in their own scroll box** with a sticky header, then a **foot** with row count, "Copy for Excel" (never "TSV"), and "Copy for Claude".
+Paper holds, top to bottom: a **verdict band**, then **rows in their own scroll box** with a sticky header, then a **foot** with row count, "Copy for Excel" (never "TSV"), and "Copy for AI".
 
 - The verdict and stamp live **outside** the horizontally scrolling table. A wide result must never push them away.
 - Show "More columns" only when real result columns are off-screen.
@@ -76,7 +76,7 @@ Errors rise as a **help slip attached to the marked word**, with a small pointer
 
 ## Hints and blanks
 
-Hint button shows pips for how many are left. Hints open inline under the console's upper edge without covering the ticket. "Show the answer" is a quiet text button, never canary, because giving up must not be the loudest option. "Copy for Claude" shows only after the first Run. The blanks message attaches directly under the editor: "The yellow boxes are waiting for you. Your cursor is in the first one."
+Hint button shows pips for how many are left. Hints open inline under the console's upper edge without covering the ticket. "Show the answer" is a quiet text button, never canary, because giving up must not be the loudest option. "Copy for AI" shows only after the first Run. The blanks message attaches directly under the editor: "The yellow boxes are waiting for you. Your cursor is in the first one."
 
 ## Home
 

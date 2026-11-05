@@ -96,6 +96,7 @@ Every mission:
 | `exNote` | Optional note under the example |
 | `exNoResult` | Hide the example's result |
 | `atWork` | Optional. How this differs on real databases (Oracle, SQL Server, BigQuery, PostgreSQL). Collapsed by default. |
+| `phone` | Optional. `[[from, to], ...]` sentence swaps for `teach`, `task` and `hints` below 1000px, when a sentence describes the laptop layout. |
 | `checkpoint` | `true` on a level's review mission |
 | `exam` | `true` for final exam missions: no hints, target or answer until cleared |
 
@@ -180,4 +181,4 @@ node --no-warnings scripts/verify.mjs --level 3
 
 This runs every example, solution, starter with `fill`, `altSolutions`, `wrong` attempt and quiz check. Fix every ERROR and read every WARN. `docs/DATA.md` lists all tables, values, ranges and planted problems. Query the data yourself before writing a task, so you know what the result looks like and that it is a sensible size (ideally 1 to 60 rows).
 
-Only Mission 1.1's starter holds the learner's first-task comment. The harness checks that it appears exactly once, so do not copy that comment anywhere else.
+Lesson text must not hold leftover author to-do marks. The harness fails if one appears.

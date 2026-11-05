@@ -31,7 +31,7 @@
         ex: [['SELECT branch_name, region', 'Show each branch name and its region'], ['FROM branches;', 'from the branches table.']],
         bridge: 'Like a small report: name the columns you want, then say which sheet they come from.',
         task: `Welcome to the [[collection]] unit. We contact customers whose loan payments are late and help get them paid. Before you meet everyone, pull the staff list. Show every [[collector]]'s <code>collector_name</code> and <code>team</code> from the <code>collectors</code> table.`,
-        starter: `-- TODO(human): fill in the three blanks, then press Run\nSELECT ____, ____\nFROM ____;`,
+        starter: `-- Fill in the three blanks, then press Run\nSELECT ____, ____\nFROM ____;`,
         fill: ['collector_name', 'team', 'collectors'],
         solution: `SELECT collector_name, team\nFROM collectors;`,
         altSolutions: [`SELECT team, collector_name\nFROM collectors;`],

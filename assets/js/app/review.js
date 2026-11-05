@@ -210,7 +210,18 @@
           advance();
         }
       });
+      /* On a phone the site header and tabs step aside during a review, so the strip carries the way out. */
+      const backBtn = el('button', {
+        type: 'button', class: 'iconbtn rv-back', 'aria-label': 'Leave the review for now', html: UI.icons.left,
+        onClick: () => {
+          stopCurrent();
+          const left = State.dueReviews();
+          if (left.length) showStart(left);
+          else showSummary();
+        }
+      });
       const strip = el('div', { class: 'rv-strip' },
+        backBtn,
         el('b', { class: 'rv-pos', text: 'Review ' + (doneCount + 1) + ' of ' + total }),
         pips,
         el('span', { class: 'sp' }),

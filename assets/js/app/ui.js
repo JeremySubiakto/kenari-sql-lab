@@ -1,7 +1,7 @@
 /*
  * Kenari.UI: shared DOM helpers and the signature pieces ported from Passbook Noir.
  * Sections: helpers, SQL highlight, rich text and glossary, code block, ledger, toast and copy,
- * dialogs, dot matrix and icons, stamp, rosettes and guilloche, sound, theme, Copy for Claude.
+ * dialogs, dot matrix and icons, stamp, rosettes and guilloche, sound, theme, Copy for AI.
  */
 (function () {
   'use strict';
@@ -39,6 +39,8 @@
   const motionOK = () => !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMac = () => /Mac|iPhone|iPad/.test(navigator.platform || '');
   const coarse = () => matchMedia('(pointer: coarse)').matches;
+  /** 1000px and wider is the desktop layout. Below that, the phone layout. */
+  const isWide = () => matchMedia('(min-width: 1000px)').matches;
   const whenIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 30));
   const cssv = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
@@ -103,7 +105,32 @@
     host.querySelectorAll('[data-demo]').forEach((d) => {
       try { if (K.Demos) K.Demos.render(d.dataset.demo, d); } catch (e) { console.error(e); }
     });
+    if (!isWide()) host.querySelectorAll('table.plain').forEach(scrollTable);
     return host;
+  }
+
+  /** Below 1000px: a table wider than the screen scrolls inside its own box, with the same More columns cue as a printout. */
+  function scrollTable(table) {
+    if (!table.parentNode || table.closest('.rich-tbl')) return;
+    const box = el('div', { class: 'rich-tbl', tabindex: '0', role: 'region', 'aria-label': 'Table. Swipe sideways to see every column.' });
+    const more = el('button', {
+      type: 'button', class: 'lg-morecols', hidden: true, html: 'More columns' + ICONS.right,
+      onClick: () => box.scrollBy({ left: box.clientWidth * 0.7, behavior: motionOK() ? 'smooth' : 'auto' })
+    });
+    const frame = el('div', { class: 'rich-frame' }, box, more);
+    table.replaceWith(frame);
+    box.append(table);
+    /* A column of sentences keeps a readable width. The table scrolls instead of squeezing it to a word per line. */
+    table.querySelectorAll('td').forEach((td) => td.classList.toggle('long', (td.textContent || '').length > 40));
+    const check = () => {
+      const room = box.scrollWidth - box.clientWidth;
+      frame.classList.toggle('can-scroll', room > 2);
+      const left = room - box.scrollLeft;
+      more.hidden = !(left > 2);
+      frame.classList.toggle('has-more', left > 2);
+    };
+    box.addEventListener('scroll', check, { passive: true });
+    if (window.ResizeObserver) { const ro = new ResizeObserver(check); ro.observe(box); ro.observe(table); }
   }
 
   const KOL_GRADES = [
@@ -132,8 +159,25 @@
     }
     popTerm = null;
   }
+  /* On a phone a glossary term opens a sheet from the bottom, with a close button in thumb reach. */
+  function openTermSheet(btn) {
+    const name = btn.dataset.term;
+    const found = K.term ? K.term(name) : null;
+    const body = el('div', { class: 'term-body' });
+    if (found) body.append(rich(found.def));
+    else body.append(el('p', { text: 'This word is not in the glossary yet. The Cheat sheet has the full list.' }));
+    if (KOL_NAMES.has(name.toLowerCase())) body.insertAdjacentHTML('beforeend', kolTable());
+    btn.setAttribute('aria-expanded', 'true');
+    openDialog('sheet paper term-sheet', {
+      title: found ? found.term : name,
+      body,
+      actions: [{ label: 'Close', value: undefined, autofocus: true }],
+      onClose: () => btn.setAttribute('aria-expanded', 'false')
+    });
+  }
   function openPop(btn) {
     closePop();
+    if (coarse() && !isWide()) { openTermSheet(btn); return; }
     const name = btn.dataset.term;
     const found = K.term ? K.term(name) : null;
     const pop = el('div', { class: 'pop', role: 'dialog', 'aria-label': name, tabindex: '-1' });
@@ -251,7 +295,10 @@
       root.append(root.foot);
     }
     const countText = (n) => {
-      if (o.kept && o.kept.of != null && n !== o.kept.of) return rowsWord(n).replace(/rows?$/, (w) => w + ' kept, of ' + o.kept.of.toLocaleString('en-US'));
+      if (o.kept && o.kept.of != null && n !== o.kept.of) {
+        if (!isWide()) return n.toLocaleString('en-US') + ' of ' + o.kept.of.toLocaleString('en-US') + ' rows';
+        return rowsWord(n).replace(/rows?$/, (w) => w + ' kept, of ' + o.kept.of.toLocaleString('en-US'));
+      }
       return rowsWord(n);
     };
     const render = () => {
@@ -350,6 +397,31 @@
   /* ---------- Dialogs ---------- */
   const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>';
   const openDialogs = new Set();
+  /* Below 1000px each dialog gets a history entry, so Android's back key closes the sheet instead of leaving the screen.
+     An entry that outlived its dialog (a link in a sheet went somewhere else) is stepped over on the way back. */
+  const backEntries = [];
+  let backSeq = 0;
+  function backOpen(close) {
+    if (isWide()) return null;
+    const entry = { idx: ((history.state && history.state.kenariDlg) || 0) + 1, id: ++backSeq, close, popped: false };
+    try { history.pushState({ kenariDlg: entry.idx, kenariDlgId: entry.id }, ''); } catch (e) { return null; }
+    backEntries.push(entry);
+    return entry;
+  }
+  function backClosed(entry) {
+    const i = backEntries.indexOf(entry);
+    if (i < 0) return;
+    backEntries.splice(i, 1);
+    if (entry.popped) return;
+    /* Later, because a tapped link closes its sheet first and navigates after. Then this entry is no longer on top, and stays put. */
+    setTimeout(() => { if (history.state && history.state.kenariDlgId === entry.id) history.back(); }, 0);
+  }
+  window.addEventListener('popstate', (e) => {
+    const st = e.state;
+    const idx = (st && st.kenariDlg) || 0;
+    backEntries.slice().reverse().forEach((x) => { if (x.idx > idx) { x.popped = true; x.close(undefined); } });
+    if (st && st.kenariDlgId && !backEntries.some((x) => x.id === st.kenariDlgId)) history.back();
+  });
   /** The Back button should not leave a dialog hanging over the next screen. */
   function closeDialogs() {
     [...openDialogs].forEach((close) => close(undefined));
@@ -358,12 +430,13 @@
   function openDialog(cls, o) {
     const before = document.activeElement;
     const dlg = el('dialog', { class: cls + (o.wide ? ' wide' : ''), 'aria-label': o.title || 'Dialog' });
-    let settled = false, resolve = null;
+    let settled = false, resolve = null, backEntry = null;
     const closed = new Promise((r) => { resolve = r; });
     const close = (value) => {
       if (settled) return;
       settled = true;
       openDialogs.delete(close);
+      if (backEntry) backClosed(backEntry);
       if (dlg.open) dlg.close();
       dlg.remove();
       if (o.onClose) o.onClose(value);
@@ -391,6 +464,7 @@
     document.body.append(dlg);
     dlg.showModal();
     openDialogs.add(close);
+    backEntry = backOpen(close);
     const auto = dlg.querySelector('[data-autofocus]');
     if (auto) auto.focus();
     return { el: dlg, body: bodyBox, close, closed };
@@ -797,9 +871,13 @@
     cv.getContext('2d').drawImage(flareSource, 0, 0);
     u.append(el('i'), cv);
     paper.append(u);
-    anim(u, [{ opacity: 0 }, { opacity: 1, offset: 0.05 }, { opacity: 0.8, offset: 0.26 }, { opacity: 0 }], { duration: 1500, easing: 'ease-out' });
+    const fade = anim(u, [{ opacity: 0 }, { opacity: 1, offset: 0.05 }, { opacity: 0.8, offset: 0.26 }, { opacity: 0 }], { duration: 1500, easing: 'ease-out' });
     anim(cv, [{ transform: 'scale(.85) rotate(-5deg)' }, { transform: 'scale(1.05) rotate(4deg)' }], { duration: 1500, easing: 'cubic-bezier(.1,.75,.2,1)' });
-    setTimeout(() => u.remove(), 1560);
+    /* Below 1000px the flare leaves when its fade ends, before anim() cancels the fade and it would snap back to full strength. */
+    if (!isWide()) {
+      if (fade) fade.onfinish = () => u.remove();
+      setTimeout(() => u.remove(), 1500);
+    } else setTimeout(() => u.remove(), 1560);
   }
 
   /**
@@ -917,7 +995,7 @@
   });
   document.documentElement.style.setProperty('--grain', 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .38 0 0 0 0 .36 0 0 0 0 .28 0 0 0 .2 0"/></filter><rect width="240" height="240" filter="url(#n)"/></svg>') + '")');
 
-  /* ---------- Copy for Claude ---------- */
+  /* ---------- Copy for AI ---------- */
   const plainOf = (html) => String(html == null ? '' : html)
     .replace(/\[\[demo:[^\]]+\]\]/g, ' ')
     .replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, '$1')
@@ -965,7 +1043,7 @@
     if (opt.kind === 'scratch') {
       prompt = 'I am practicing SQL in Kenari Collection SQL Lab, on a made-up bank database that runs in my browser (SQLite). Please explain this query line by line in plain English, then tell me one way to make it better.\n\n'
         + 'Tables:\n' + tablesFor(sql, true) + '\n\nMy query:\n' + sql + '\n\nWhat happened:\n' + outcomeText(opt.outcome);
-      said = 'Copied a prompt that asks Claude to explain your query line by line. If it holds anything from work, remove customer data before you paste.';
+      said = 'Copied a prompt that asks an AI assistant to explain your query line by line. If it holds anything from work, remove customer data before you paste.';
     } else {
       const l = opt.lesson || {};
       prompt = 'I am learning SQL in Kenari Collection SQL Lab, a practice site with a made-up bank (Bank Kenari), running SQLite. Please tutor me. Do not give me the final query. Point me to the part to look at, and ask me one question at a time.\n\n'
@@ -988,7 +1066,7 @@
     el, esc, hl, code, rich, ledger, toast, copy, stamp, modal, sheet, confirmInPage, closeDialogs, setTitle, announce, copyForClaude,
     plainOf, toTSV,
     /* Extras other screens need */
-    SQL_KEYWORDS, SQL_FUNCTIONS, KOL_GRADES, icons: ICONS, motionOK, isMac, coarse, whenIdle, anim,
+    SQL_KEYWORDS, SQL_FUNCTIONS, KOL_GRADES, icons: ICONS, motionOK, isMac, coarse, isWide, whenIdle, anim, scrollTable,
     runKeys: () => (isMac() ? '\u2318 Enter' : 'Ctrl Enter'),
     dm, qd, rosette, stampSVG, rankStamp, stampDate, jolt, prepFlare, guilloche, drawUV, sound, applyTheme
   };
