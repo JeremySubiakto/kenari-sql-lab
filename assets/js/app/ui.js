@@ -487,7 +487,7 @@
     return m.closed.then((v) => v === true);
   }
 
-  const setTitle = (text) => { document.title = text ? text + ' | Kenari SQL Lab' : 'Kenari Collection SQL Lab'; };
+  const setTitle = (text) => { document.title = text ? text + ' | Kenari SQL Lab' : 'Kenari Collection SQL Lab: learn SQL free, from zero to pro'; };
   const announce = (text) => {
     const live = document.getElementById('live');
     if (!live) return;
