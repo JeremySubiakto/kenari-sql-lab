@@ -1,0 +1,6 @@
+{
+  "name": "kenari-sql-lab",
+  "private": true,
+  "description": "Learn SQL from zero to pro on a made-up bank collection database.",
+  "scripts": { "verify": "node scripts/verify.mjs" }
+}

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Editor test | Kenari SQL Lab</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Mona+Sans:wdth,wght@100..125,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/editor.css">
+<style>
+  body{padding:20px var(--gutter) 240px;gap:18px;max-width:900px;margin:0 auto}
+  h1{font-size:24px}
+  h2{font-size:16px;margin-bottom:6px;color:var(--text-2)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .row .seg-btn{min-height:40px;padding:0 12px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--hair-2,var(--hair));font-size:15px}
+  .mc-act{justify-content:flex-end}
+  #log{font:400 13px/1.45 var(--f-mono);color:var(--text-2);white-space:pre-wrap;min-height:40px}
+</style>
+<script defer src="../assets/js/core/data.js"></script>
+<script defer src="../assets/js/lessons/level-1.js"></script>
+<script defer src="../assets/js/app/glyphs.js"></script>
+<script defer src="../assets/js/app/state.js"></script>
+<script defer src="../assets/js/app/ui.js"></script>
+<script defer src="../assets/js/app/editor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const K = window.Kenari, $ = (id) => document.getElementById(id);
+  const log = (m) => { window.__runs = (window.__runs || 0); $('log').textContent = m; };
+  const level1 = globalThis.KENARI_LEVELS.find((l) => l.n === 1);
+  const starter = (level1.lessons || level1.missions).find((m) => /_{3,}/.test(m.starter || '')).starter;
+  const LONG = "SELECT loan_id, customer_id, branch_id, product, disbursed_date, principal, outstanding, dpd, collectibility, status, loan_id AS the_same_loan_again, 'a very long text value that carries on well past the edge of the box' AS note\nFROM loans\nWHERE dpd > 30 AND status <> 'Written Off' AND product IN ('KPR', 'KKB', 'KTA', 'Kartu Kredit') -- and a comment at the end of a very long line that keeps going\nORDER BY dpd DESC;";
+  const MANY = Array.from({ length: 40 }, (_, i) => (i ? "  , COUNT(*) AS col_" + i : 'SELECT 1 AS first')).join('\n') + '\nFROM loans;';
+  const mk = (id, value, extra) => K.Editor.create($(id), Object.assign({
+    id, value,
+    lines: { min: 3, max: 12 },
+    onInput: () => { window.__inputs = (window.__inputs || 0) + 1; paintStatus(); },
+    onRun: () => { window.__runs = (window.__runs || 0) + 1; log('Run pressed ' + window.__runs + ' times'); }
+  }, extra || {}));
+  window.eds = {
+    a: mk('a', starter),
+    b: mk('b', "SELECT strftime('____', payment_date) AS pay_month,\n  SUM(amount) AS collector_cash\nFROM payments\nWHERE channel = ____\nGROUP BY ____;"),
+    c: mk('c', LONG),
+    d: mk('d', MANY),
+    e: mk('e', '', { lines: { min: 2, max: 6 }, placeholder: undefined })
+  };
+  function paintStatus() {
+    const n = window.eds.a.blankCount;
+    $('status').textContent = n > 1 ? n + ' blanks to fill' : n === 1 ? 'One blank left' : 'Ready to run';
+  }
+  paintStatus();
+  document.querySelectorAll('[data-col]').forEach((b) => b.addEventListener('click', () => window.eds.a.insert(b.dataset.col)));
+  $('mark').addEventListener('click', () => { window.eds.e.value = 'SELECT kol, l.kol\nFROM loans l\nWHERE kol = 5 AND note = \'kol\';'; window.eds.e.markError('kol'); });
+  $('theme').addEventListener('click', () => { const h = document.documentElement; h.dataset.theme = h.dataset.theme === 'dark' ? 'light' : 'dark'; });
+  $('run').addEventListener('click', () => { window.__runs = (window.__runs || 0) + 1; });
+  $('after').addEventListener('click', () => { });
+});
+</script>
+</head>
+<body>
+<h1>Editor test page</h1>
+<div class="row">
+  <button type="button" class="seg-btn" id="theme">Switch theme</button>
+  <button type="button" class="seg-btn" data-col="loan_id">Insert loan_id</button>
+  <button type="button" class="seg-btn" data-col="product">Insert product</button>
+  <button type="button" class="seg-btn" data-col="loans">Insert loans</button>
+  <button type="button" class="seg-btn" id="mark">Mark an error in E</button>
+</div>
+
+<section>
+  <h2>A. The first blank mission, from the lesson file</h2>
+  <div class="mc">
+    <div class="mc-bar"><span class="mc-lamp" data-state="todo"></span><b id="status">Ready</b></div>
+    <div id="a"></div>
+    <div class="mc-act"><button type="button" class="key canary big" id="run">Run</button></div>
+    <div class="slot"></div>
+  </div>
+</section>
+
+<section>
+  <h2>B. Blanks inside text, as in strftime</h2>
+  <div class="mc"><div id="b"></div></div>
+</section>
+
+<section>
+  <h2>C. Long lines</h2>
+  <div class="mc"><div id="c"></div></div>
+</section>
+
+<section>
+  <h2>D. More lines than the height allows</h2>
+  <div class="mc"><div id="d"></div></div>
+</section>
+
+<section>
+  <h2>E. Starts empty</h2>
+  <div class="mc"><div id="e"></div></div>
+</section>
+
+<button type="button" class="seg-btn" id="after">A button after the editors</button>
+<div id="log" role="status"></div>
+</body>
+</html>

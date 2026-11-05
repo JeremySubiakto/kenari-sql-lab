@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demos | Kenari SQL Lab</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Mona+Sans:wdth,wght@100..125,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/demos.css">
+<style>
+  body{padding:20px max(16px,var(--gutter)) 64px}
+  .bar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 0;margin-bottom:14px;background:var(--ground);border-bottom:1px solid var(--hair)}
+  .bar h1{font-size:20px;flex-basis:100%}
+  .bar .seg{margin:0;min-width:300px}
+  .bar label{font-size:14px;color:var(--text-2)}
+  #list{display:flex;flex-direction:column;gap:30px}
+  #list.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));align-items:start}
+  section{min-width:0;width:100%}
+  body[data-w="360"] section{max-width:328px}
+  body[data-w="600"] section{max-width:600px}
+  section h2{font-size:18px;margin-bottom:8px}
+  section h2 small{font:500 13.5px/1 var(--f-mono);color:var(--text-3);margin-left:8px;letter-spacing:0}
+</style>
+<script defer src="../assets/js/core/data.js"></script>
+<script defer src="../assets/js/core/check.js"></script>
+<script defer src="../assets/js/core/reference.js"></script>
+<script defer src="../assets/js/lessons/level-0.js"></script>
+<script defer src="../assets/js/lessons/level-1.js"></script>
+<script defer src="../assets/js/lessons/level-2.js"></script>
+<script defer src="../assets/js/lessons/level-3.js"></script>
+<script defer src="../assets/js/lessons/level-4.js"></script>
+<script defer src="../assets/js/lessons/level-5.js"></script>
+<script defer src="../assets/js/lessons/level-6.js"></script>
+<script defer src="../assets/js/lessons/level-7.js"></script>
+<script defer src="../assets/js/lessons/level-8.js"></script>
+<script defer src="../assets/js/lessons/level-9.js"></script>
+<script defer src="../assets/js/app/glyphs.js"></script>
+<script defer src="../assets/js/app/state.js"></script>
+<script defer src="../assets/js/app/engine.js"></script>
+<script defer src="../assets/js/app/evaluate.js"></script>
+<script defer src="../assets/js/app/ui.js"></script>
+<script defer src="../assets/js/app/demos.js"></script>
+<script defer src="../assets/js/app/main.js"></script>
+</head>
+<body data-w="full">
+<div class="bar">
+  <h1>Every demo, inside the lesson that uses it</h1>
+  <div class="seg" role="group" aria-label="Theme" id="themes" style="grid-template-columns:repeat(2,1fr)">
+    <button type="button" data-theme-set="dark" aria-pressed="true">Dark</button>
+    <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+  </div>
+  <div class="seg" role="group" aria-label="Width" id="widths">
+    <button type="button" data-w-set="full" aria-pressed="true">All</button>
+    <button type="button" data-w-set="600" aria-pressed="false">600px pane</button>
+    <button type="button" data-w-set="360" aria-pressed="false">Phone</button>
+  </div>
+  <label><input type="checkbox" id="lessonText"> Show the lesson text around each</label>
+</div>
+<div id="list" class="grid"></div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var K = window.Kenari, UI = K.UI;
+    var list = document.getElementById('list');
+    var params = new URLSearchParams(location.search);
+
+    function press(group, btn) {
+      group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    }
+    function setTheme(t) {
+      document.documentElement.dataset.theme = t;
+      press(document.getElementById('themes'), document.querySelector('[data-theme-set="' + t + '"]'));
+    }
+    function setWidth(w) {
+      document.body.dataset.w = w;
+      list.classList.toggle('grid', w === 'full');
+      press(document.getElementById('widths'), document.querySelector('[data-w-set="' + w + '"]'));
+    }
+    document.getElementById('themes').addEventListener('click', function (e) { if (e.target.dataset.themeSet) setTheme(e.target.dataset.themeSet); });
+    document.getElementById('widths').addEventListener('click', function (e) { if (e.target.dataset.wSet) setWidth(e.target.dataset.wSet); });
+
+    function draw() {
+      list.replaceChildren();
+      var withText = document.getElementById('lessonText').checked;
+      K.lessons.filter(function (l) { return /\[\[demo:/.test(l.teach || ''); }).forEach(function (lesson) {
+        var names = lesson.teach.match(/\[\[demo:([^\]]+)\]\]/g).map(function (t) { return t.slice(7, -2); });
+        var section = UI.el('section', { dataset: { demoLevel: lesson.level.n } },
+          UI.el('h2', {}, 'Mission ' + lesson.id, UI.el('small', { text: names.join(', ') })));
+        var body;
+        if (withText) {
+          body = UI.rich(lesson.teach);
+        } else {
+          body = UI.el('div', { class: 'rich' });
+          names.forEach(function (n) { body.append(UI.el('div', { class: 'demo-host', dataset: { demo: n } })); });
+        }
+        section.append(body);
+        list.append(section);
+        /* Rendered again now it is attached, so the demo can read its level from the section */
+        section.querySelectorAll('.demo-host').forEach(function (h) { K.Demos.render(h.dataset.demo, h); });
+      });
+    }
+    document.getElementById('lessonText').addEventListener('change', draw);
+    if (params.get('text')) document.getElementById('lessonText').checked = true;
+    draw();
+    setTheme(params.get('theme') || 'dark');
+    setWidth(params.get('w') || 'full');
+    window.__demosReady = true;
+  });
+</script>
+</body>
+</html>
