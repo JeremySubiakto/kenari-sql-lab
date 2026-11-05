@@ -161,6 +161,8 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
 
 /* ---------- Quiz ---------- */
 .ms-quiz{display:flex;flex-direction:column;gap:11px}
+/* On a cleared quiz the mark sits under the question, because over it the mark hides the words */
+.ms-q .tk-closed{position:static;display:inline-block;margin-top:11px}
 .ms-q .tk-task{font-size:16.5px;line-height:1.44}
 .ms-q-code{margin-top:9px}
 .ms-q-feed{margin-top:-1px}
