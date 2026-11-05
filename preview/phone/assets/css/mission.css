@@ -1,0 +1,746 @@
+/* The mission screen, owned by the mission agent. Review reuses it. See docs/DESIGN.md and docs/PHONE.md.
+   Sections: frame, left pane, example, bridge, right pane, ticket, tables, quiz, order,
+   console, hints, paper and verdict, help slip, phone (everything below 1000px wide lives there). */
+
+/* ---------- Frame ---------- */
+@media (min-width:1000px){
+  html[data-route="mission"] body{height:100dvh;overflow:hidden}
+}
+.ms{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,46fr) minmax(0,54fr);height:var(--ms-h,calc(100dvh - var(--topbar-h) - env(safe-area-inset-top,0px)));min-height:0;--ed-cap:320px;--stage-h:320px;--tray-h:0px;--g:clamp(12px,1.6vw,24px);--do-w:880px}
+.ms.is-review{grid-template-columns:minmax(0,1fr)}
+.ms a{text-underline-offset:3px}
+
+/* ---------- Left pane: learn ---------- */
+.ms-learn{position:relative;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--hair-2) transparent;isolation:isolate}
+.ms-learn>.gl{--cx:100%;--cy:0;position:absolute;left:0;right:0;top:0;height:420px;z-index:0;opacity:.72;-webkit-mask-image:radial-gradient(circle 360px at 100% 0,#000 20%,transparent 100%);mask-image:radial-gradient(circle 360px at 100% 0,#000 20%,transparent 100%)}
+.ms-learn-in{position:relative;z-index:1;max-width:660px;margin:0 auto;padding:16px clamp(18px,2.6vw,40px) 56px}
+
+.ms-where{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;font-size:14.5px;line-height:1.3;color:var(--text-2)}
+.ms-where-t{min-width:0;display:flex;flex-direction:column;gap:2px}
+.ms-lv{text-decoration:none;border-radius:2px}
+.ms-lv b{font-weight:600;color:var(--text)}
+.ms-lv:hover{color:var(--text);text-decoration:underline}
+.ms-rank{color:var(--text-3)}
+.ms-rank b{font-weight:600;color:var(--text-2)}
+.ms-prog{margin-left:10px;padding-left:10px;border-left:1px solid var(--hair-2);font:500 13px/1 var(--f-mono);color:var(--text-3);white-space:nowrap}
+.ms-nav{display:flex;gap:4px;flex:none}
+.ms-nav-a{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 9px;color:var(--text-2);box-shadow:inset 0 0 0 1px var(--hair);border-radius:3px;text-decoration:none;font:500 13.5px/1 var(--f-mono)}
+.ms-nav-a:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--hair-2)}
+.ms-nav-a svg.ico{width:12px;height:12px}
+.ms-navgap{display:none}
+
+/* Position: real targets that wrap. 29 missions fit in two rows. */
+.ms-dots{position:relative;display:flex;flex-wrap:wrap;align-items:center;margin:6px 0 0 -4px}
+.ms-dot{position:relative;display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:3px}
+.ms-dot i{display:block;width:10px;height:10px;border-radius:50%;background:var(--ground);box-shadow:inset 0 0 0 1.5px var(--medal-rest);transition:scale .12s ease}
+.ms-dot:hover i{scale:1.3}
+.ms-dot.on i{background:var(--verd);box-shadow:none}
+.ms-dot.cp i{border-radius:1px;rotate:45deg;width:9px;height:9px}
+.ms-dot.cur i{width:14px;height:14px;border-radius:50%;rotate:0deg;background:var(--text);box-shadow:0 0 0 2.5px var(--ground),0 0 0 4px var(--text)}
+.ms-tip{position:absolute;z-index:6;max-width:300px;padding:5px 9px;background:var(--paper);color:var(--paper-ink);font-size:13.5px;line-height:1.25;border-radius:2px;box-shadow:var(--shadow-mini);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.ms-head{display:flex;align-items:center;gap:13px;margin-top:12px}
+.ms-plate{flex:none;line-height:0}
+.ms-head-t{min-width:0}
+.ms-head h1{font:500 clamp(21px,1.75vw,27px)/1.12 var(--f-display);font-stretch:114%;letter-spacing:-.018em;text-wrap:balance}
+.ms-tag{display:inline-block;margin-bottom:4px;padding:2px 7px;font:600 12.5px/1.2 var(--f-body);letter-spacing:.02em;color:var(--text);border-radius:2px;box-shadow:inset 0 0 0 1px var(--hair-2)}
+
+.ms-idea{margin-top:13px;--wh:11px}
+.ms-idea .weave{opacity:.75}
+.ms-idea-b{padding:9px 0 10px}
+.ms-idea-l{font-size:13.5px;line-height:1.2;color:var(--term);font-weight:600}
+.ms-idea .rich{font:500 clamp(17px,1.32vw,20px)/1.3 var(--f-display);font-stretch:104%;letter-spacing:-.008em;margin-top:3px;color:var(--text)}
+.ms-idea code{font-size:.92em;font-weight:500;padding:.02em .24em;background:var(--code-bg);color:var(--term)}
+
+.ms-teach{margin-top:12px;font-size:16.5px;line-height:1.56}
+.ms-teach .rich>p+p{margin-top:11px}
+.ms-sub{font:600 15px/1.2 var(--f-body);letter-spacing:0;color:var(--text);margin:0 0 9px}
+
+/* ---------- Example ---------- */
+.ms-ex{margin-top:22px}
+.ms-ex-mc{border-radius:6px 6px 3px 3px;box-shadow:0 0 0 1px var(--mc-hair),0 2px 0 1px var(--mc-edge)}
+.ms-ex-lines{padding:5px 0 6px}
+.ms-ex-line{position:relative;padding:6px 16px 7px 15px}
+.ms-ex-line+.ms-ex-line{border-top:1px solid var(--mc-divider)}
+.ms-ex-line.is-key{background:var(--mc-3)}
+.ms-ex-line.is-key::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--sx-kw)}
+.ms-ex-mc code.ms-ex-sql{display:block;font:400 14.5px/1.5 var(--f-mono);white-space:pre;overflow-x:auto;scrollbar-width:none;background:none;padding:0;color:var(--mc-text);border-radius:0}
+.ms-ex-en{display:flex;gap:8px;align-items:flex-start;margin-top:2px;color:var(--mc-text-2);font-size:15px;line-height:1.38}
+.ms-ex-en>span:first-child{flex:none;margin-top:3px;color:var(--mc-text-3)}
+.ms-ex-en svg{width:13px;height:13px}
+.ms-ex-feed{margin:-1px 12px 0}
+.ms-ex-feed .ledger{--row:27px;box-shadow:var(--shadow-mini)}
+.ms-ex-feed .lg-scroll{max-height:164px}
+.ms-ex-note{margin-top:11px;font-size:15.5px;line-height:1.5;color:var(--text-2)}
+.ms-wait{font-size:14.5px;line-height:1.35;color:var(--text-3);padding:8px 2px}
+
+/* ---------- Bridge and at-work notes ---------- */
+.ms-bridge{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:start;margin-top:20px;padding:13px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.ms-fx{display:grid;place-items:center;width:34px;height:34px;font:italic 500 15px/1 var(--f-mono);color:var(--text-2);background:var(--ground-3);box-shadow:inset 0 0 0 1px var(--hair-2);border-radius:2px}
+.ms-bridge h2{font:600 14.5px/1.2 var(--f-body);letter-spacing:0;color:var(--text);margin-bottom:3px}
+.ms-bridge .rich{font-size:15.5px;line-height:1.46;color:var(--text-2)}
+.ms-atwork{border-bottom:1px solid var(--hair)}
+.ms-atwork summary{display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer;font-weight:600;font-size:15px;color:var(--text);list-style:none;border-radius:2px}
+.ms-atwork summary::-webkit-details-marker{display:none}
+.ms-atwork summary svg{width:12px;height:12px;color:var(--text-3);transition:rotate .16s}
+.ms-atwork[open] summary svg{rotate:90deg}
+.ms-atwork .rich{padding:0 0 14px 21px;color:var(--text-2);font-size:15.5px;line-height:1.5}
+
+/* ---------- Right pane: stage over a docked console ---------- */
+.ms-do{--ms-bg:var(--ground-2);position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--ms-bg);border-left:1px solid var(--hair)}
+.is-review .ms-do{--ms-bg:var(--ground);border-left:0}
+.ms-stage{position:relative;flex:1 1 0;min-height:0;overflow:hidden}
+.ms-upper{position:absolute;inset:0;overflow:auto;overflow-anchor:none;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--hair-2) transparent;container:do / inline-size}
+.ms-upper-in{display:flex;flex-direction:column;gap:11px;width:100%;max-width:calc(var(--do-w) + 2*var(--g));margin:0 auto;padding:12px var(--g) calc(14px + var(--tray-h))}
+.ms-upper:focus{outline:none}
+
+/* ---------- Ticket ---------- */
+.ms-ticket{transition:none}
+.ms-ticket .tk-main{padding:11px 15px 12px}
+.ms-ticket .tk-top{margin-bottom:5px}
+.ms-ticket .tk-task{font-size:16px;line-height:1.44}
+.ms-ticket .tk-task code,.ms-q .tk-task code{white-space:normal}
+.ms-ticket .tk-avatar{width:26px;height:26px;font-size:11.5px}
+.tk-wanted>span:first-child{margin-right:3px}
+.tk-wanted code{font-size:13.5px}
+.tk-stub{padding:0}
+.ms-stub-t{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:36px;padding:7px 14px;font:600 14.5px/1.2 var(--f-body);color:var(--text);text-align:left;border-radius:2px}
+.ms-stub-t svg{width:11px;height:11px;flex:none;color:var(--text-3);transition:rotate .16s}
+.ms-stub-t[aria-expanded="true"] svg{rotate:180deg}
+.ms-stub-t:hover{background:var(--code-bg)}
+.ms-stub-b{padding:0 14px 11px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ms-stub-b .ms-wait{padding:6px 0 10px}
+.ms-stub-b[hidden]{display:none}
+.ms-ticket .ledger,.ms-peek .ledger{--row:26px}
+
+@container do (min-width:620px){
+  .ms-ticket.has-stub{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.14fr);--nx:46.73%;-webkit-mask-image:radial-gradient(circle 8px at var(--nx) 0,transparent 98%,#000 100%),radial-gradient(circle 8px at var(--nx) 100%,transparent 98%,#000 100%);-webkit-mask-composite:source-in;mask-image:radial-gradient(circle 8px at var(--nx) 0,transparent 98%,#000 100%),radial-gradient(circle 8px at var(--nx) 100%,transparent 98%,#000 100%);mask-composite:intersect}
+  .ms-ticket.has-stub .tk-stub{border-top:0;border-left:2px dashed var(--ticket-hair)}
+  .ms-ticket.has-stub:not(.stub-open){grid-template-columns:minmax(0,1fr) 236px;--nx:calc(100% - 237px)}
+  .ms-ticket.has-stub.stub-open .tk-closed{right:12px;top:auto;bottom:9px}
+  .ms-ticket.has-stub:not(.stub-open) .tk-closed{right:248px}
+}
+@media (max-height:700px) and (min-width:1000px){
+  .ms-ticket.stub-open .tk-wanted{display:none}
+}
+
+/* ---------- Tables you need ---------- */
+.ms-tables-h{display:flex;align-items:center;gap:4px 10px;flex-wrap:wrap;margin-bottom:5px}
+.ms-tables-t,.ms-tables-t0{display:inline-flex;align-items:center;gap:7px;min-height:28px;font:600 15px/1.2 var(--f-body);letter-spacing:0;color:var(--text);text-align:left;border-radius:2px}
+.ms-tables-t svg{width:10px;height:10px;color:var(--text-3);transition:rotate .16s}
+.ms-tables-t[aria-expanded="true"] svg{rotate:180deg}
+.ms-tables-h small{font-size:14px;line-height:1.25;color:var(--text-3)}
+.ms-tables-h .plain{margin-left:auto;min-height:28px;font-size:14.5px}
+.ms-tables-b{display:flex;flex-direction:column;gap:8px}
+.tbl-c{box-shadow:inset 0 0 0 1px var(--hair);border-radius:4px;overflow:hidden}
+.tbl-n{display:flex;align-items:center;gap:4px 10px;min-height:38px;padding:4px 7px 4px 12px;border-bottom:1px solid var(--hair);background:var(--ground-3);flex-wrap:wrap}
+.tbl-n code{font-size:14.5px;font-weight:600;background:none;padding:0;color:var(--text)}
+.tbl-d{font-size:14px;line-height:1.28;color:var(--text-2);min-width:0;flex:1 1 180px}
+.ms-peekb{display:inline-flex;align-items:center;height:30px;padding:0 10px;font-size:13.5px;font-weight:500;color:var(--text);box-shadow:inset 0 0 0 1px var(--hair-2);border-radius:3px;white-space:nowrap}
+.ms-peekb:hover{background:var(--code-bg)}
+.ms-peek{padding:8px;background:var(--ground-3);border-bottom:1px solid var(--hair);display:flex;flex-direction:column;gap:6px}
+.ms-peek[hidden]{display:none}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:3px}
+.col{position:relative;display:block;width:100%;min-height:26px;padding:3px 9px;text-align:left;border-radius:3px;font-size:13.5px;line-height:20px}
+.col code{background:none;padding:0;font-size:13.5px;color:var(--term);font-weight:500;margin-right:7px;white-space:normal;overflow-wrap:anywhere}
+.col span{color:var(--text-2)}
+button.col:hover,button.col:focus-visible{background:var(--code-bg)}
+button.col:hover code{text-decoration:underline;text-underline-offset:3px}
+.col.hinted{background:var(--code-bg)}
+.col.hinted code{color:var(--text);font-weight:600}
+.col.want{background:var(--help-bg);box-shadow:inset 0 0 0 1.5px var(--help)}
+.col.want code{color:var(--text);font-weight:600}
+.col .use-this{margin-left:7px;color:var(--cta-ink)}
+@container do (max-width:470px){.cols{grid-template-columns:minmax(0,1fr)}}
+.ms-alltables{display:flex;flex-direction:column;gap:10px}
+.ms-alltables h3{font:600 15px/1.2 var(--f-body);letter-spacing:0;margin-top:8px}
+.ms-links{display:flex;flex-direction:column;gap:3px;font-size:14px}
+.ms-links code{white-space:normal;overflow-wrap:anywhere}
+.ms-model-b{display:flex;flex-direction:column;gap:10px}
+
+/* ---------- Quiz ---------- */
+.ms-quiz{display:flex;flex-direction:column;gap:11px}
+/* On a cleared quiz the mark sits under the question, because over it the mark hides the words */
+.ms-q .tk-closed{position:static;display:inline-block;margin-top:11px}
+.ms-q .tk-task{font-size:16.5px;line-height:1.44}
+.ms-q-code{margin-top:9px}
+.ms-q-feed{margin-top:-1px}
+.ms-q-feed .ms-wait{color:var(--text-2)}
+.ms-choices{display:flex;flex-direction:column;gap:8px}
+.ms-choice{border-radius:5px;background:var(--ground-3);box-shadow:inset 0 0 0 1.5px var(--hair-2)}
+.ms-choice-b{display:flex;align-items:center;gap:13px;width:100%;min-height:54px;padding:10px 15px;text-align:left;font-size:16.5px;line-height:1.36;font-weight:500;color:var(--text);border-radius:5px;transition:background .12s ease}
+.ms-choice-b:hover{background:var(--code-bg)}
+.ms-choice-b .rich code{white-space:normal}
+.ms-choice-l{display:inline-grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;font:600 13px/1 var(--f-mono);color:var(--text-2);box-shadow:inset 0 0 0 1.5px var(--hair-2)}
+.ms-why{margin:0 8px 8px;padding:9px 12px;background:var(--paper);color:var(--paper-ink);font-size:15.5px;line-height:1.45;border-radius:2px;box-shadow:var(--shadow-mini)}
+.ms-why code{background:var(--paper-code-bg);color:var(--paper-ink)}
+.ms-choice.is-wrong{background:none;box-shadow:inset 0 0 0 1.5px var(--help)}
+.ms-choice.is-wrong .ms-choice-b{cursor:default;color:var(--text-2)}
+.ms-choice.is-wrong .ms-choice-b:hover{background:none}
+.ms-choice.is-wrong .ms-choice-l{color:var(--help);box-shadow:inset 0 0 0 1.5px var(--help)}
+.ms-choice.is-right{box-shadow:inset 0 0 0 2px var(--text)}
+.ms-choice.is-right .ms-choice-l{background:var(--text);color:var(--ground);box-shadow:none}
+.ms-choice.is-other:not(.is-wrong) .ms-choice-b{color:var(--text-2)}
+.ms-choice.is-right .ms-choice-b,.ms-choice.is-other .ms-choice-b{cursor:default}
+
+/* ---------- Order ---------- */
+.ms-tilewrap .ms-sub{margin-bottom:7px}
+.ms-tiles{display:flex;flex-direction:column;gap:6px;min-height:46px}
+.ms-tiles-e{font-size:14.5px;line-height:1.35;color:var(--text-3);padding:4px 0}
+.ms-tile{display:block;width:100%;min-height:46px;padding:9px 14px;background:var(--mc);color:var(--mc-text);border-radius:4px;box-shadow:0 0 0 1px var(--mc-hair),0 2px 0 1px var(--mc-edge);text-align:left;cursor:pointer;transition:translate .08s ease}
+.ms-tile:hover{background:var(--mc-2)}
+.ms-tile:active{translate:0 1px}
+.ms-tile code{background:none;padding:0;color:var(--mc-text);font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ms-builtbox{padding:6px 0 8px;max-height:var(--ed-max-h);overflow:auto;scrollbar-width:thin;scrollbar-color:var(--mc-hair) transparent}
+.ms-line,.ms-line-empty{display:flex;align-items:center;gap:10px;width:100%;min-height:38px;padding:4px 14px;text-align:left}
+.ms-line{cursor:pointer}
+.ms-line:hover{background:var(--mc-hover)}
+.ms-line code{background:none;padding:0;color:var(--mc-text);font-size:15.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ms-line-n{flex:none;width:20px;text-align:right;font:400 13.5px/1 var(--f-mono);color:var(--mc-text-3)}
+.ms-line-empty span:last-child{font-size:14.5px;color:var(--mc-text-3)}
+.ms-line-empty span:last-child:not(:empty){padding:3px 10px;box-shadow:inset 0 0 0 1px var(--mc-hair);border-radius:2px;border:0}
+
+/* ---------- Console ---------- */
+.ms-dock{position:relative;flex:none;z-index:5;width:100%;max-width:calc(var(--do-w) + 2*var(--g));margin:0 auto;padding:0 var(--g) 10px}
+.ms-mc{position:relative;display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--mc-hair),0 2px 0 1px var(--mc-edge),var(--shadow-mini)}
+.ms-bar{min-height:36px;padding:4px 14px}
+.ms-status{white-space:normal!important;line-height:1.2}
+.ms-note{white-space:nowrap}
+.ms-note .plain{min-height:0;font-size:14px}
+.ms-edbox{--ed-max-h:var(--ed-cap);background:var(--mc)}
+.ms-edhost{min-height:100%}
+.ms-under{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:15px;line-height:1.3;color:var(--mc-text);background:var(--mc-2);border-top:1px solid var(--mc-hair)}
+.ms-under-mark{flex:none;width:18px;height:12px;background:var(--canary);border-radius:2px}
+.ms-keys{padding:8px 12px 9px;gap:8px;flex-wrap:nowrap;border-top:1px solid var(--mc-hair);align-items:center}
+.ms-keys .key:not(.canary){background:var(--mc-3);color:var(--mc-text);box-shadow:inset 0 0 0 1px var(--mc-hair),0 2px 0 var(--mc-edge)}
+.ms-keys .key:not(.canary):hover{background:var(--mc-hair)}
+.ms-keys .ghost{min-height:44px}
+.ms-keys .sp{flex:1 1 0;min-width:0}
+.ms-enter{font-size:14px;color:var(--mc-text-2);white-space:nowrap;flex:none}
+.ms-run{flex:0 1 auto;min-width:112px;max-width:100%;overflow:hidden}
+.ms-run-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-run.is-next{min-width:0}
+.ms-keys-quiz{display:none}
+.is-quiz.is-passed .ms-keys-quiz{display:flex}
+.ms-mc .slot{display:none}
+.pips{display:inline-flex;gap:3px;margin-left:1px}
+.pips i{width:6px;height:6px;border-radius:50%;box-shadow:inset 0 0 0 1.25px var(--mc-text-3)}
+.pips i.on{background:var(--mc-text);box-shadow:none}
+.is-passed .ms-over{display:none}
+
+/* Short laptop windows */
+.is-short .ms-bar{min-height:32px;padding:2px 14px}
+.is-short .ms-keys{padding:6px 12px 7px}
+.is-short .ms-keys .key.big{min-height:46px}
+.is-short .ms-keys .key:not(.big),.is-short .ms-keys .ghost{min-height:40px}
+/* With paper up, the editor gives its height to the rows until the learner goes back to it. */
+.is-short.paper-up:not(.ed-focus) .ms-edbox{--ed-max-h:100px}
+
+/* ---------- Hints ---------- */
+.ms-hints{flex:none;max-height:min(30vh,210px);overflow:auto;scrollbar-width:thin;scrollbar-color:var(--mc-hair) transparent;padding:6px 14px 10px;display:flex;flex-direction:column;gap:7px;background:var(--mc-2);border-bottom:1px solid var(--mc-hair)}
+.ms-hints[hidden]{display:none}
+.ms-hints-h{position:sticky;top:-6px;z-index:1;display:flex;align-items:center;justify-content:space-between;margin:-6px -14px 0;padding:4px 14px;background:var(--mc-2);font-size:14px;color:var(--mc-text-2)}
+.ms-hints-h b{font-weight:600}
+.ms-hints-h .plain{min-height:26px;font-size:14px}
+.ms-hint{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;font-size:15.5px;line-height:1.42;color:var(--mc-text)}
+.ms-hint .n{font:500 13px/1 var(--f-mono);color:var(--mc-text-3)}
+.ms-answer{padding-top:6px;border-top:1px dashed var(--mc-hair);display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.ms-answer .codeblock{width:100%;background:var(--mc)}
+.ms-toast{display:inline-flex;align-items:center;gap:12px}
+.ms-qnext{display:none}
+
+/* ---------- Paper: rises out of the console, over the upper area ---------- */
+.ms-tray{position:absolute;left:0;right:0;bottom:0;top:0;z-index:4;width:100%;max-width:calc(var(--do-w) + 2*var(--g));margin:0 auto;padding:0 var(--g);display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;transition:translate .22s cubic-bezier(.3,.7,.3,1)}
+.ms-tray>*{pointer-events:auto}
+.ms-tray.has-slip{bottom:9px}
+.ms-tray.lowered{translate:0 var(--low,0px)}
+.ms-tray.lowered .stamp-fx{visibility:hidden}
+.ms-sheet{display:flex;flex-direction:column;min-height:0;max-height:100%;container-type:inline-size;font-size:15px;box-shadow:var(--shadow-paper)}
+.ms-sheet:focus{outline:none}
+.ms-sheet .ledger{background:none;box-shadow:none;--row:28px}
+.ms-sheet .ledger::after{display:none}
+.is-short .ms-sheet .ledger{--row:26px}
+.is-short .ms-sheet .lg-foot{min-height:36px;padding:2px 12px}
+.is-short .ms-sheet .lg th{height:28px}
+
+/* One line of the request stays pinned, so a wrong result can be read beside it. */
+.ms-pin{position:relative;z-index:8;flex:none;display:flex;align-items:center;gap:10px;min-height:34px;padding:4px 12px;background:var(--paper-2);border-bottom:1px solid var(--paper-rule-2);font-size:14px;line-height:1.3;color:var(--paper-ink)}
+.ms-pin-text{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-pin-text b{font-weight:600}
+.ms-pin-text .rich{display:inline}
+.ms-pin-text code{font-size:13px;padding:0 .2em;background:var(--paper-code-bg);color:var(--paper-ink)}
+.ms-pin .tlink{flex:none;font-size:13.5px;min-height:26px;font-weight:500;white-space:nowrap}
+.ms-pin.open{align-items:flex-start}
+.ms-pin.open .ms-pin-text{white-space:normal;max-height:92px;overflow:auto}
+.ms-pin-full{flex:1 1 0;min-width:0;max-height:min(40vh,180px);overflow:auto;scrollbar-width:thin;scrollbar-color:var(--paper-rule-2) transparent}
+.ms-pin-full code{background:var(--paper-code-bg);color:var(--paper-ink)}
+.ms-pin-full table.plain td{border-bottom-color:var(--paper-rule)}
+.ms-pin-closed{flex:none;padding:2px 5px;font:700 11.5px/1.1 var(--f-mono);letter-spacing:.05em;color:var(--stamp-paper);box-shadow:0 0 0 1.5px var(--stamp-paper);border-radius:2px;rotate:-2deg}
+
+/* Verdict band: outside the rows, so a wide result can never push it away. */
+.ms-sheet .vband{padding:8px 12px;gap:8px 12px;font-size:15px;line-height:1.38}
+.ms-band-t{min-width:0;max-height:max(84px,calc(var(--stage-h) - 214px));overflow:auto;scrollbar-width:thin;scrollbar-color:var(--paper-rule-2) transparent;background:linear-gradient(var(--paper) 30%,transparent) top/100% 16px no-repeat local,linear-gradient(transparent,var(--paper) 70%) bottom/100% 16px no-repeat local,radial-gradient(farthest-side at 50% 0,var(--paper-rule-2),transparent) top/100% 7px no-repeat scroll,radial-gradient(farthest-side at 50% 100%,var(--paper-rule-2),transparent) bottom/100% 7px no-repeat scroll}
+.ms-sheet:not(:has(.ledger)) .ms-band-t{max-height:max(84px,calc(var(--stage-h) - 90px))}
+.ms-sheet .vband-title{font-size:17px}
+.ms-sheet .vband-body code,.ms-sheet .vband-tips code{white-space:normal}
+.ms-sheet .validation{width:136px;min-height:88px;align-self:start}
+.ms-sheet:not(:has(.ledger)) .validation.stamped{min-height:124px}
+.ms-sheet .not-yet{font-size:18px}
+@container (max-width:460px){
+  .ms-sheet .validation{width:88px;min-height:60px;padding:4px 6px}
+  .ms-sheet .validation small{font-size:9.5px;letter-spacing:.04em}
+  .ms-sheet .not-yet{font-size:14px;letter-spacing:.03em}
+}
+.ms-change{display:flex;gap:7px;align-items:flex-start;margin-top:6px;padding:6px 8px;background:var(--paper-code-bg);color:var(--paper-ink);border-radius:2px;font-size:14.5px;line-height:1.38}
+.ms-change>span:first-child{flex:none;margin-top:1px}
+.ms-change svg{width:16px;height:16px}
+.ms-meta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px;margin-top:5px;padding-top:4px;border-top:1px dashed var(--paper-rule-2)}
+.ms-meta .vband-line{margin:0;white-space:pre-wrap}
+.ms-meta .tlink{min-height:24px;font-size:13.5px;font-weight:500}
+.ms-added svg{width:11px;height:11px}
+.ms-win{color:var(--paper-ink)}
+
+/* While the rows print, the win holds its place, hidden, so nothing moves when it appears. */
+.ms-sheet.is-landing .ms-band-t{visibility:hidden}
+.ms-sheet.is-landing.is-stamped .ms-band-t{visibility:visible;animation:msWin .22s ease both}
+@keyframes msWin{from{opacity:0}to{opacity:1}}
+
+/* Rows */
+.ms-results{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.ms-results>.ledger{flex:1 1 auto;min-height:0}
+.ms-results.many{overflow:auto;scrollbar-width:thin;scrollbar-color:var(--paper-rule-2) transparent}
+.ms-results.many>.ledger{flex:none}
+.ms-results.many>.ledger+.ledger{border-top:1.5px solid var(--paper-ink)}
+.ms-results.many .lg-scroll{max-height:176px}
+.ms-results.many .lg-foot{min-height:32px}
+.ms-foot0{min-height:36px}
+.ms-sheet .lg-foot{gap:3px 12px;padding:3px 12px}
+.ms-cmp{margin:0;grid-template-columns:auto auto;width:max-content;border-color:var(--paper-rule-2);border-radius:3px}
+.ms-cmp button{height:28px;padding:0 10px;font-size:13.5px;font-weight:500;color:var(--paper-ink-2);white-space:nowrap}
+.ms-cmp button+button{border-left-color:var(--paper-rule-2)}
+.ms-cmp button:hover{color:var(--paper-ink);background:var(--paper-code-bg)}
+.ms-cmp button[aria-pressed="true"]{background:var(--paper-ink);color:var(--paper);font-weight:600}
+.ms-sheet[data-showing="target"] .lg-frame{box-shadow:inset 3px 0 0 var(--paper-ink)}
+/* Count, Compare and both copy links stay on one line on a mid laptop, so the rows keep that height. */
+@container (max-width:660px) and (min-width:470px){
+  .ms-sheet .lg-foot{column-gap:9px;padding-inline:10px}
+  .ms-sheet .lg-count{font-size:13px}
+  .ms-sheet .lg-foot .tlink{font-size:13.5px}
+  .ms-cmp button{padding:0 7px;font-size:13px}
+}
+
+/* ---------- Help slip: over the console, pointing at the word ---------- */
+.ms-slip{display:flex;flex-direction:column;min-height:0;max-height:100%;padding:0;font-size:15.5px;line-height:1.42}
+.ms-slip::before{top:auto;bottom:-7px;z-index:1}
+.ms-slip.no-ptr::before{display:none}
+.ms-slip-b{flex:0 1 auto;min-height:0;overflow:auto;padding:9px 14px 11px;scrollbar-width:thin;scrollbar-color:var(--paper-rule-2) transparent}
+.ms-slip h3{font-size:17px}
+.ms-slip-b code{white-space:normal}
+.ms-sliptips{margin-top:6px;padding-top:6px;border-top:1px dashed var(--paper-rule-2)}
+.ms-sliptips li+li{margin-top:4px}
+.ms-slip .help-act{margin-top:8px}
+.ms-slip .help-act .tlink{margin-left:auto}
+.ms-leader{position:absolute;z-index:6;width:0;border-left:1.5px dotted var(--help-mark);pointer-events:none;-webkit-mask-image:linear-gradient(#000 var(--gap-a,0px),transparent var(--gap-a,0px),transparent var(--gap-b,0px),#000 var(--gap-b,0px));mask-image:linear-gradient(#000 var(--gap-a,0px),transparent var(--gap-a,0px),transparent var(--gap-b,0px),#000 var(--gap-b,0px))}
+
+/* Keeps the rows behind from showing in the gap under the slip's pointer */
+.ms-tray.has-slip::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:9px;background:var(--ms-bg);z-index:-1}
+
+/* ---------- Position sheet: every mission in the level ---------- */
+.ms-poslist{display:flex;flex-direction:column}
+.ms-posrow{display:grid;grid-template-columns:22px auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:48px;padding:6px 4px;border-top:1px solid var(--hair);color:var(--text);text-decoration:none;font-size:16px;line-height:1.25}
+.ms-poslist li:first-child .ms-posrow{border-top:0}
+.ms-posrow:hover{background:var(--code-bg)}
+.ms-posmark{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--medal-rest);color:var(--ground)}
+.ms-posmark svg{width:11px;height:11px}
+.ms-posrow.on .ms-posmark{background:var(--verd);box-shadow:none}
+.ms-posid{font:500 14px/1 var(--f-mono);color:var(--text-2)}
+.ms-posrow.cur{font-weight:600}
+.ms-posrow.cur .ms-posmark{background:var(--text);box-shadow:0 0 0 2px var(--ground-3),0 0 0 3.5px var(--text)}
+.ms-posrow.cur.on .ms-posmark{color:var(--ground)}
+.ms-posrow em{font:500 13px/1.1 var(--f-body);font-style:normal;color:var(--text-2);white-space:nowrap}
+
+/* ---------- Review: the do pane only ---------- */
+.is-review .ms-ticket .tk-task{font-size:16.5px}
+
+/* ---------- Mid laptop widths ---------- */
+@media (max-width:1240px) and (min-width:1000px){
+  .ms{grid-template-columns:minmax(0,42fr) minmax(0,58fr)}
+  .ms-note{display:none}
+}
+@media (max-width:1120px) and (min-width:1000px){
+  .ms-enter{display:none}
+}
+
+/* ---------- Phone and tablet: an app, not a page. See docs/PHONE.md ---------- */
+/* These parts exist at every size and only show below 1000px. */
+.ms-mbar,.ms-segs,.ms-chips,.ms-req1,.ms-try,.ms-edit,.ms-ex-t,.ms-copy-w{display:none}
+
+@media (max-width:999px){
+  /* The page never scrolls. Only the content inside a step does. */
+  html[data-route="mission"],html[data-route="review"][data-reviewing]{overscroll-behavior:none}
+  html[data-route="mission"] body,html[data-route="review"][data-reviewing] body{height:var(--vvh,100dvh);min-height:0;overflow:hidden}
+  html[data-route="mission"][data-keybar="up"] body,html[data-route="review"][data-reviewing][data-keybar="up"] body{padding-bottom:0}
+  html[data-route="mission"] #view,html[data-route="review"][data-reviewing] #view{flex:1 1 auto;min-height:0;overflow:hidden}
+  html[data-route="mission"] #top{display:none}
+  html[data-route="review"][data-reviewing] .tabbar{display:none}
+
+  .ms{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;flex:1 1 auto;height:auto;min-height:0;overflow:hidden;--g:16px;background:var(--ground)}
+  .ms.is-review{grid-template-columns:minmax(0,1fr)}
+
+  /* ----- Mission bar ----- */
+  .ms-mbar{display:block;grid-row:1;padding-top:env(safe-area-inset-top,0px);background:var(--ground)}
+  .is-review .ms-mbar{display:none}
+  .ms-mbar-row{display:flex;align-items:center;height:47px;padding:0 max(2px,env(safe-area-inset-right,0px)) 0 max(2px,env(safe-area-inset-left,0px))}
+  .ms-back{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--text);border-radius:4px}
+  .ms-back svg{width:18px;height:18px}
+  .ms-mhead{flex:1 1 0;min-width:0;font:inherit;letter-spacing:0}
+  .ms-mtitle{display:flex;align-items:center;gap:7px;width:100%;min-height:44px;text-align:left;color:var(--text);border-radius:4px}
+  .ms-mid{flex:none;font:500 14px/1 var(--f-mono);color:var(--text-2)}
+  .ms-mname{flex:0 1 auto;min-width:0;font:600 16px/1.2 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ms-mdown{flex:none;display:grid;place-items:center;color:var(--text-3)}
+  .ms-mdown svg{width:10px;height:10px}
+  .ms-saldo{flex:none;display:flex;align-items:baseline;gap:5px;min-height:44px;padding:14px 12px 0 10px;text-decoration:none;color:var(--text-2);line-height:1;overflow:hidden}
+  .ms-saldo small{font-size:13px}
+  .ms-saldo b{display:inline-block;font:600 15px/1 var(--f-mono);color:var(--text)}
+  .ms-mprog{position:relative;display:block;height:2px;background:var(--hair)}
+  .ms-mprog::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,0%);background:var(--text-2)}
+
+  /* ----- Step tabs ----- */
+  .ms-segs{display:grid;grid-row:2;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:var(--ground);border-bottom:1px solid var(--hair)}
+  .ms-seg{position:relative;min-height:44px;font:500 15.5px/1 var(--f-body);color:var(--text-2)}
+  .ms-seg[aria-selected="true"]{color:var(--text);font-weight:600}
+  .ms-seg[aria-selected="true"]::after{content:"";position:absolute;left:18px;right:18px;bottom:-1px;height:3px;background:var(--text);border-radius:2px 2px 0 0}
+  .ms-seg:disabled{color:var(--text-3);opacity:.55;cursor:default}
+  .ms-seg:focus-visible{outline-offset:-3px}
+
+  /* ----- Which step shows ----- */
+  .ms-learn,.ms-do{grid-row:3;min-height:0}
+  .ms[data-step="learn"] .ms-do{display:none}
+  .ms:not([data-step="learn"]) .ms-learn{display:none}
+  .ms-learn:focus,.ms-do:focus{outline:none}
+
+  /* ----- Learn: reading order, calm, no boxes in boxes ----- */
+  .ms-learn{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .ms-learn>.gl,.ms-where,.ms-dots,.ms-head,.ms-idea .weave{display:none}
+  .ms-learn-in{max-width:680px;padding:20px var(--g) 28px}
+  .ms-head:has(.ms-tag){display:block;margin:0 0 10px}
+  .ms-head:has(.ms-tag) .ms-plate,.ms-head:has(.ms-tag) h1{display:none}
+  .ms-idea{margin:0}
+  .ms-idea-b{padding:0}
+  .ms-idea-l{font-size:14px;color:var(--text-2)}
+  .ms-idea .rich{margin-top:6px;font-size:23px;line-height:1.28;font-stretch:102%}
+  .ms-teach{margin-top:20px;font-size:17px;line-height:1.62}
+  .ms-teach .rich>p+p{margin-top:14px}
+  .ms-ex{margin-top:26px}
+  .ms-sub{font-size:16px;margin-bottom:10px}
+  .ms-ex-mc{margin:0 calc(var(--g)*-1);border-radius:0;box-shadow:none}
+  .ms-ex-lines{padding:4px 0 6px}
+  .ms-ex-line{padding:8px var(--g)}
+  .ms-ex-mc code.ms-ex-sql{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+  .ms-ex-en{font-size:16px;line-height:1.42;margin-top:3px}
+  .ms-ex-t{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;margin-top:6px;font:600 15.5px/1.2 var(--f-body);color:var(--text);text-align:left}
+  .ms-ex-t[hidden]{display:none}
+  .ms-ex-tn{font:500 13.5px/1 var(--f-mono);color:var(--text-2)}
+  .ms-ex-ti{margin-left:auto;display:grid;place-items:center;color:var(--text-3);transition:rotate .16s}
+  .ms-ex-ti svg{width:11px;height:11px}
+  .ms-ex-t[aria-expanded="true"] .ms-ex-ti{rotate:180deg}
+  .ms-ex-feed{display:none;margin:0 calc(var(--g)*-1)}
+  .ms-ex-feed.open{display:block}
+  .ms-ex-feed .ledger{box-shadow:none}
+  .ms-ex-note{margin-top:12px;font-size:16px;line-height:1.55}
+  .ms-bridge{margin-top:26px;padding:16px 0 4px;border-bottom:0;gap:4px 12px}
+  .ms-bridge h2{font-size:15.5px}
+  .ms-bridge .rich{font-size:16px;line-height:1.55}
+  .ms-atwork{margin-top:14px;border-top:1px solid var(--hair)}
+  .ms-atwork summary{min-height:48px;font-size:15.5px}
+  .ms-atwork .rich{font-size:16px;line-height:1.55;padding-left:0}
+
+  /* ----- Task: request, two chips, console ----- */
+  .ms-do{display:flex;flex-direction:column;border-left:0;background:var(--ground);container:step / size}
+  .is-review .ms-do{--ms-bg:var(--ground)}
+  .ms-stage{flex:0 1 auto;display:flex;flex-direction:column;min-height:0;overflow:visible}
+  .ms-upper{position:relative;inset:auto;flex:0 1 auto;min-height:0;max-height:25vh;max-height:34cqh;overflow-x:hidden;overflow-y:auto;background:linear-gradient(transparent,var(--ground) 70%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 100%,var(--hair-2),transparent) bottom/100% 8px no-repeat scroll}
+  .ms-upper.target-open{max-height:40vh;max-height:56cqh}
+  .ms-upper-in{display:block;max-width:none;padding:0}
+  .ms-tables{display:none}
+
+  .ms-ticket,.ms-ticket.has-stub{display:block;background:none;box-shadow:none;border-radius:0;-webkit-mask-image:none;mask-image:none}
+  .ms-ticket .tk-main{padding:10px var(--g) 11px}
+  .ms-ticket .tk-top{margin-bottom:4px;flex-wrap:nowrap;font-size:14px}
+  .ms-ticket .tk-top>span:last-child{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ms-ticket .tk-avatar{width:26px;height:26px;font-size:11.5px}
+  .ms-ticket .tk-task,.is-review .ms-ticket .tk-task{font-size:16px;line-height:1.45}
+  .ms-ticket:not(.stub-open) .tk-wanted,.ms-ticket:not(.stub-open) .tk-stub{display:none}
+  .ms-ticket .tk-wanted{margin-top:8px}
+  .ms-ticket.has-stub .tk-stub{border:0;border-top:1px dashed var(--ticket-hair);padding:8px var(--g) 10px}
+  .ms-stub-t{display:none}
+  .ms-stub-b{padding:0}
+  .ms .ledger.compact .lg,.ms-peek .ledger.compact .lg{font-size:14px}
+  .ms-q .tk-closed{position:static;display:inline-block;margin:12px 0 10px}
+  /* The closed mark sits in the header line, level with the requester's name. */
+  .ms-ticket{position:relative}
+  .ms-ticket .tk-closed,.ms-ticket.has-stub.stub-open .tk-closed,.ms-ticket.has-stub:not(.stub-open) .tk-closed{position:absolute;display:block;left:auto;right:var(--g);top:14px;bottom:auto;margin:0}
+  .ms-ticket:has(>.tk-closed) .tk-top{padding-right:164px}
+  .ms-ticket:not(:has(.tk-top)) .tk-closed{position:static;display:inline-block;margin:0 var(--g) 10px}
+
+  /* A long request stops at a whole line. The fade and Read all say there is more. */
+  .ms-upper.is-clamped{overflow:hidden;background:none}
+  .ms-upper.is-clamped::after{content:"";position:absolute;left:0;right:0;bottom:0;height:20px;background:linear-gradient(transparent,var(--ground));pointer-events:none}
+  .ms-req-more{position:absolute;right:0;bottom:0;z-index:2;align-items:flex-end;min-height:44px;padding:0 var(--g) 2px 34px;background:linear-gradient(to right,transparent,var(--ground) 26px) bottom/100% 24px no-repeat}
+  .ms-req-more[hidden]{display:none}
+  .ms-do.req-open .ms-stage{flex:1 1 0}
+  .ms-do.req-open .ms-upper{flex:1 1 0;max-height:none;overflow-y:auto}
+  .ms-do.req-open .ms-chips,.ms-do.req-open .ms-dock{display:none}
+  .ms-do.req-open .ms-req-more{position:sticky;left:auto;display:flex;justify-content:flex-end;align-items:center;width:100%;padding:0 var(--g);background:linear-gradient(transparent,var(--ground) 40%)}
+
+  .ms-chips{flex:none;display:flex;gap:8px;padding:0 var(--g) 9px}
+  .ms-chip{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font:600 15px/1 var(--f-body);color:var(--text);background:var(--ground-3);border-radius:4px;box-shadow:inset 0 0 0 1px var(--hair-2)}
+  .ms-chip-i{display:grid;place-items:center;color:var(--text-3);transition:rotate .16s}
+  .ms-chip-i svg{width:10px;height:10px}
+  .ms-chip[aria-expanded="true"] .ms-chip-i{rotate:180deg}
+  .ms-chip-dot{display:none;width:9px;height:9px;border-radius:50%;background:var(--help-mark)}
+  .ms-chip.has-lit{box-shadow:inset 0 0 0 1.5px var(--help)}
+  .ms-chip.has-lit .ms-chip-dot{display:block}
+
+  /* The console takes all the height that is left, down to the bottom bar. */
+  .ms-dock{flex:1 1 0;min-height:128px;width:auto;max-width:none;margin:0;padding:0}
+  .ms-mc{height:100%;min-height:0;border-radius:0;box-shadow:none}
+  .ms-bar{flex:none;min-height:38px;padding:4px var(--g)}
+  .ms-note,.ms-mc .slot{display:none}
+  .ms-hints{max-height:30vh;max-height:44cqh}
+  .ms-hint{font-size:16px}
+  .ms-hints-h .plain{min-height:44px}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-upper{max-height:20vh;max-height:20cqh}
+  /* Hints open: the editor always keeps three lines, and the slip folds to its title and its one-click fix. */
+  .ms-do:has(.ms-hints:not([hidden])) .ms-hints{flex:0 1 auto;min-height:0;max-height:none}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-edbox{flex:1 1 90px;min-height:90px}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-dock{min-height:224px}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-slip-b>:not(h3):not(.help-act){display:none}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-slip .help-act:not(:has(.fixbtn)){display:none}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-slip .help-act .tlink{display:none}
+  .ms-do:has(.ms-hints:not([hidden])) .ms-slip-b{padding-bottom:6px;background:none}
+  .ms-edbox{flex:1 1 0;min-height:0;--ed-max-h:none}
+  .ms-edhost{height:100%;min-height:0}
+  .ms .ed{height:100%;--ed-pad-x:var(--g)}
+  .ms .ed-scroll{height:100%;max-height:none}
+  /* A soft edge says there is more of the query above or below. */
+  .ms .ed-scroll{background:linear-gradient(var(--mc) 40%,transparent) top/100% 18px no-repeat local,linear-gradient(transparent,var(--mc) 60%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 0,var(--mc-hair),transparent) top/100% 12px no-repeat scroll,radial-gradient(farthest-side at 50% 100%,var(--mc-hair),transparent) bottom/100% 12px no-repeat scroll}
+  .ms .ed-code{min-height:0}
+  .ms-under{flex:none;padding:9px var(--g);font-size:16px}
+
+  /* A blank run or a SQL error stays on this step. The slip sits above the editor and scrolls inside itself. */
+  .ms-tray{display:none}
+  .ms[data-step="task"] .ms-tray.has-slip{position:relative;inset:auto;display:flex;order:-1;flex:0 1 auto;min-height:0;width:auto;max-width:none;margin:0;padding:0;transition:none}
+  .ms[data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-upper{display:none}
+  .ms[data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])){max-height:64vh;max-height:68cqh}
+  .ms[data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-chips{padding-top:8px}
+  .ms-tray.has-slip::after{display:none}
+  .ms-slip{flex:1 1 auto;width:100%;max-height:none;border-radius:0;box-shadow:none;font-size:16px;line-height:1.45}
+  .ms-slip-b{display:flex;flex-direction:column;padding:10px var(--g) 12px;background:linear-gradient(transparent,var(--paper) 70%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 100%,var(--paper-rule-2),transparent) bottom/100% 8px no-repeat scroll}
+  .ms-slip-b>h3{order:1}
+  .ms-slip-b>.rich{order:2}
+  .ms-slip .help-act{order:3;margin:10px 0 2px}
+  .ms-sliptips{order:4;margin-top:8px}
+  .ms-slip-b>.help-sub{order:5}
+  .ms-slip-b>.help-raw{order:6}
+  .ms-slip .fixbtn{min-height:44px}
+  .ms-leader{display:none}
+
+  /* The pinned request */
+  .ms-pin{min-height:44px;padding:0 12px 0 var(--g);font-size:15px;cursor:pointer}
+  .ms-pin-low{display:none}
+  .ms-pin-text code{white-space:nowrap}
+  .ms-pin .tlink{min-height:44px;font-size:14px}
+  .ms-pin.open{padding-top:8px;padding-bottom:6px;cursor:default}
+  .ms-pin.open .ms-pin-text{max-height:112px}
+  .ms-pin-full{max-height:min(38vh,220px)}
+
+  /* With the keyboard up: one line of request, the editor, the key bar. Nothing else. */
+  .ms-req1{align-items:center;flex:none;width:100%;min-height:40px;padding:0 var(--g);font-size:14.5px;line-height:1.25;text-align:left;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--hair)}
+  .ms-req1 b{font-weight:600;color:var(--text)}
+  .ms-req1 .rich{display:inline}
+  .ms-req1 code{white-space:nowrap}
+  .ms.kb-up .ms-req1{display:block;line-height:39px}
+  .ms.kb-up .ms-segs,.ms.kb-up .ms-upper,.ms.kb-up .ms-chips,.ms.kb-up .ms-tray,.ms.kb-up .ms-keys{display:none!important}
+  .ms.kb-up .ms-stage{flex:none;max-height:none!important}
+  .ms.kb-up .ms-do{padding-bottom:var(--keybar-h,0px)}
+  .ms.kb-up .ms-dock{min-height:0}
+
+  /* ----- Result: paper fills the step, edge to edge ----- */
+  .ms[data-step="result"] .ms-do{background:var(--paper)}
+  .ms[data-step="result"] .ms-upper,.ms[data-step="result"] .ms-chips,.ms[data-step="result"] .ms-req1,.ms[data-step="result"] .ms-dock{display:none!important}
+  .ms[data-step="result"] .ms-stage{flex:1 1 0}
+  .ms[data-step="result"] .ms-tray{position:relative;inset:auto;display:flex;flex:1 1 0;min-height:0;width:auto;max-width:none;margin:0;padding:0;transition:none}
+  .ms-sheet{flex:1 1 0;width:100%;min-height:0;max-height:none;box-shadow:none;border-radius:0}
+  .ms-sheet .ms-pin,.ms-sheet .ms-pin.open{flex:none}
+  .ms-sheet .vband{flex:0 1 auto;min-height:0;grid-template-rows:minmax(0,1fr);gap:0 10px;padding:10px 14px 10px var(--g);overflow:hidden;font-size:16px;line-height:1.42}
+  .ms-sheet .ms-band-t,.ms-sheet:not(:has(.ledger)) .ms-band-t{align-self:stretch;min-height:0;max-height:none;overflow-x:hidden}
+  .ms-sheet .vband-title{font-size:18px}
+  .ms-sheet .validation{width:auto;min-height:0;padding:0;border:0;align-self:start}
+  .ms-sheet .validation small{display:none}
+  .ms-sheet .not-yet{display:block;padding:3px 6px;font-size:12.5px;line-height:1.1;letter-spacing:.05em;white-space:nowrap;border-radius:2px;box-shadow:inset 0 0 0 1.5px currentColor;rotate:-3deg}
+  .ms-sheet[data-state="pass"] .vband{display:flex;flex-direction:column;min-height:116px}
+  .ms-sheet[data-state="pass"] .ms-band-t{flex:0 1 auto}
+  .ms-sheet[data-state="pass"] .validation,.ms-sheet:not(:has(.ledger)) .validation.stamped{float:right;width:96px;height:96px;min-height:96px;margin:0 0 2px 8px}
+  .ms-sheet.is-landing .ms-band-t .validation{visibility:visible}
+  /* A verdict longer than its band: a fade over the last line, and More gives it the rows' height. */
+  .ms-band-more{position:absolute;right:0;bottom:0;z-index:3;align-items:flex-end;min-height:44px;padding:0 var(--g) 3px 34px;background:linear-gradient(to right,transparent,var(--paper) 26px) bottom/100% 24px no-repeat}
+  .ms-band-more[hidden],.ms-sheet.is-landing:not(.is-stamped) .ms-band-more{display:none}
+  .ms-band-i{display:grid;place-items:center}
+  .ms-band-i svg{width:10px;height:10px;transition:rotate .16s}
+  .ms-sheet.band-open .ms-band-i svg{rotate:180deg}
+  .vband.has-more::after{content:"";position:absolute;left:0;right:0;bottom:0;height:38px;z-index:2;background:linear-gradient(transparent,var(--paper) 80%);pointer-events:none}
+  .ms-sheet.band-open .vband{flex:1 1 0}
+  .ms-sheet.band-open .ms-band-t{padding-bottom:40px}
+  .ms-sheet.band-open .ms-results{display:none}
+  .ms-sheet.band-open .ms-foot0{display:none}
+  .ms-sheet.is-landing.is-stamped .ms-band-t{animation:none}
+  .ms-sheet.is-landing.is-stamped .ms-band-t>:not(.validation){animation:msWin .22s ease both}
+  .ms-change{font-size:16px;line-height:1.4}
+  .ms-meta .tlink{min-height:44px}
+
+  /* Rows take the rest, and always keep room for five, even with a long verdict. */
+  .ms-results{flex:1 1 var(--res-min,240px);min-height:var(--res-min,240px)}
+  .ms-sheet .ledger{--row:30px}
+  .ms-sheet .ledger:not(.compact) .lg-wrap{padding:0}
+  .ms-sheet .ledger:not(.compact) .lg-wrap::before,.ms-sheet .ledger:not(.compact) .lg-wrap::after{display:none}
+  .ms-sheet .ledger:not(.compact) .lg-scroll{background-image:none}
+  .ms-sheet .lg td,.ms-sheet .lg th{padding:0 10px}
+  .ms-sheet .lg .rn{padding:0 8px 0 4px}
+  .ms-sheet .lg-foot,.ms-foot0{flex-wrap:nowrap;gap:8px;min-height:48px;padding:0 12px 0 var(--g);row-gap:0}
+  .ms-sheet .lg-foot>.sp{flex:1 1 0;min-width:0}
+  .ms-sheet .lg-count{flex:0 1 auto;min-width:0;font-size:13px;line-height:1.2}
+  .ms-sheet .lg-foot:not(.ms-foot0)>.tlink{display:none}
+  .ms-foot0{margin-top:auto}
+  .ms-foot0 .tlink{min-height:44px}
+  .ms-cmp{flex:none}
+  .ms-cmp button{height:44px;padding:0 9px;font-size:13.5px}
+  .ms-cmp button{position:relative}
+  .ms-copy-w{display:block;position:relative;flex:none}
+  .ms-copy{justify-content:center;min-width:44px;min-height:44px;font-weight:600;font-size:14.5px}
+  .ms-copy-m{position:absolute;right:0;bottom:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:190px;padding:4px;background:var(--paper);border-radius:4px;box-shadow:var(--shadow-menu),0 0 0 1px var(--paper-rule-2)}
+  .ms-copy-i{min-height:44px;padding:0 12px;text-align:left;font-size:15.5px;color:var(--paper-ink);border-radius:3px}
+  .ms-copy-i:hover{background:var(--paper-code-bg)}
+  .ms-results.many .lg-scroll{max-height:190px}
+
+  /* ----- The bottom bar: one main action, in thumb reach ----- */
+  .ms-keys{position:relative;z-index:5;grid-row:4;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;min-height:64px;padding:6px max(12px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:var(--ground-3);border-top:1px solid var(--hair)}
+  .ms-keys .sp,.ms-keys .ms-enter,.ms-keys .kbd{display:none}
+  .ms-keys .key.big{flex:1 1 0;min-width:0;min-height:50px;padding:0 14px;font-size:17px}
+  .ms-keys .key:not(.canary){flex:none;min-height:46px;padding:0 13px;background:var(--ground-4);color:var(--text);box-shadow:inset 0 0 0 1px var(--hair-2),0 2px 0 var(--hair-2);font-size:15.5px}
+  .ms-keys .key:not(.canary):hover{background:var(--ground-3)}
+  .ms-keys :focus-visible,.ms-keys .key.canary:focus-visible{outline-color:var(--focus)}
+  .ms-keys .ghost{flex:none;min-height:46px;padding:0 6px;font-size:14.5px;color:var(--text-2);background:none;box-shadow:none;text-decoration:underline;text-decoration-color:var(--hair-2);text-underline-offset:3px}
+  .ms-keys .ghost:hover{background:none;box-shadow:none;color:var(--text)}
+  .ms-keys .ms-model{flex:0 1 auto;line-height:1.15;text-align:left}
+  .pips i{box-shadow:inset 0 0 0 1.25px var(--text-3)}
+  .pips i.on{background:var(--text);box-shadow:none}
+  .ms-run{max-width:none}
+  .ms-run-l{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.14;text-align:center}
+  .ms-again{order:-1}
+  .ms-hintb{order:-2}
+  .ms-over{order:-1}
+  .is-passed .ms-over{display:none}
+  .ms.is-cleared[data-step="task"]:not(.is-passed):not(.is-passing) .ms-qnext{display:inline-flex;align-items:center;flex:none;order:-1}
+  .ms-toast .tlink{min-width:44px;justify-content:center}
+
+  .ms[data-step="learn"] .ms-keys>:not(.ms-try){display:none!important}
+  .ms[data-step="learn"] .ms-try{display:inline-flex}
+  .ms[data-step="result"]:not(.is-passed):not(.is-passing) .ms-keys>:not(.ms-edit):not(.ms-hintb){display:none!important}
+  .ms[data-step="result"]:not(.is-passed):not(.is-passing) .ms-edit{display:inline-flex}
+  .ms.is-passing .ms-keys>:not(.ms-run){display:none!important}
+  .ms.is-passed:not([data-step="learn"]) .ms-keys>:not(.ms-run):not(.ms-again){display:none!important}
+
+  /* ----- Quiz: Learn | Question ----- */
+  .ms-keys-quiz{display:flex}
+  .is-quiz .ms-stage{flex:1 1 0}
+  .is-quiz .ms-upper,.is-quiz .ms-upper.target-open{flex:1 1 0;max-height:none}
+  .is-quiz .ms-upper-in{padding:14px var(--g) 18px}
+  .is-quiz .ms-dock{display:none}
+  .ms.is-quiz[data-step="task"]:not(.is-passed):not(.is-passing):not(.is-cleared) .ms-keys{display:none}
+  .ms.is-quiz.is-cleared[data-step="task"] .ms-keys{justify-content:flex-end}
+  .is-quiz .ms-run:not(.is-next){display:none}
+  .is-quiz.is-passing .ms-keys{display:none}
+  .ms-q{background:none;box-shadow:none;border-radius:0}
+  .ms-q .tk-main{padding:0}
+  .ms-q .tk-task{font-size:17.5px;line-height:1.48}
+  .ms-q-code{margin:12px calc(var(--g)*-1) 0}
+  .ms-q-code .codeblock{border-radius:0}
+  .ms-q-code .codeblock pre,.ms-answer .codeblock pre,.ms-model-b .codeblock pre{white-space:pre-wrap;overflow-wrap:anywhere}
+  .ms-q-feed{display:block;margin:0}
+  .ms-q-feed .ledger{box-shadow:none}
+  .ms-choices{gap:10px;margin-top:4px}
+  .ms-choice-b{min-height:60px;padding:12px 14px;font-size:17px;line-height:1.38}
+  .ms-why{font-size:16px;line-height:1.5}
+  /* After the right answer the paper sits under the chosen card, with the stamp and the win text. */
+  .is-quiz .ms-tray{position:relative;inset:auto;display:flex;flex:none;max-height:56%;width:auto;max-width:none;margin:0;padding:0;transition:none}
+  .is-quiz .ms-sheet .ms-pin{display:none}
+  .is-quiz .ms-sheet{flex:0 1 auto;box-shadow:0 -1px 0 var(--paper-rule-2)}
+  .is-quiz .ms-sheet .vband{height:100%;border-bottom:0}
+
+  /* ----- Order: request, tiles as large rows, the built query in the terminal, Run ----- */
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])){max-height:none}
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-upper{display:block}
+  .ms[data-type="order"][data-step="task"] .ms-tray.has-slip{max-height:44cqh}
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) :is(.ms-ticket,.ms-tilewrap .ms-sub){display:none}
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-tilewrap{padding-top:10px}
+  .ms[data-type="order"] .ms-stage{flex:1 1 0}
+  .ms[data-type="order"] .ms-upper,.ms[data-type="order"] .ms-upper.target-open{flex:1 1 0;max-height:none}
+  .ms[data-type="order"] .ms-dock{flex:0 1 auto;min-height:0;max-height:46cqh}
+  .ms[data-type="order"] .ms-mc{height:auto;max-height:100%}
+  .ms[data-type="order"] .ms-edbox{flex:0 1 auto;overflow:auto}
+  .ms[data-type="order"] .ms-edhost{height:auto}
+  .ms-tilewrap{padding:4px var(--g) 12px}
+  .ms-tile{min-height:50px;font-size:16px}
+  .ms-tile code{font-size:15.5px}
+  .ms-builtbox{max-height:none;padding:4px 0}
+  .ms-line{min-height:44px;padding:4px var(--g)}
+  .ms-line-empty{min-height:30px;padding:0 var(--g)}
+  /* Only placed lines and one prompt, so the tiles keep the height. */
+  .ms-line-empty~.ms-line-empty{display:none}
+  .ms[data-type="order"] .ms-do:has(.ms-tiles-e:not([hidden])) .ms-dock{max-height:72cqh}
+  .ms-line code{font-size:15px}
+
+  /* ----- Tables sheet ----- */
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .col{display:flex;align-items:center;flex-wrap:wrap;gap:0 8px;min-height:44px;padding:6px 10px;line-height:1.3;font-size:15px}
+  .col code{font-size:15px;margin-right:0}
+  .col .use-this{margin-left:0}
+  .ms-peekb{height:44px}
+  .tbl-n{min-height:52px}
+  .ms-tsheet{display:flex;flex-direction:column;gap:12px}
+  .ms-tsheet-l{font-size:15px;line-height:1.35;color:var(--text-2)}
+  .ms-tsheet h3{font:600 15.5px/1.2 var(--f-body);letter-spacing:0;margin-top:6px}
+  .ms-tsheet-all{align-self:flex-start;min-height:44px}
+
+  /* ----- Short screens: a phone on its side, or a small window ----- */
+  @media (max-height:500px){
+    .ms-mbar-row{height:44px}
+    .ms-segs .ms-seg{min-height:40px}
+    .ms-upper{max-height:26cqh}
+    .ms-chips{padding-bottom:6px}
+    .ms-keys{min-height:56px;padding-top:3px;padding-bottom:calc(3px + env(safe-area-inset-bottom,0px))}
+    .ms-keys .key.big{min-height:46px}
+    .ms-results{flex-basis:124px;min-height:124px}
+    .ms-ticket .tk-closed{display:none}
+    .ms-ticket:has(>.tk-closed) .tk-top{padding-right:0}
+    .ms-upper.is-clamped::after{height:9px}
+  }
+  /* On its side the rows matter most: the band folds to its title, and More opens the rest. */
+  @media (max-height:449px){
+    .ms-sheet .ms-pin{display:none}
+    .ms-sheet .vband{max-height:48px;padding-top:7px;padding-bottom:7px}
+    .ms-sheet:not([data-state="pass"]) .validation{margin-right:62px}
+    .vband.has-more::after{height:12px}
+    .ms-sheet[data-state="pass"] .vband{min-height:0;max-height:72px}
+    .ms-sheet[data-state="pass"] .validation,.ms-sheet:not(:has(.ledger)) .validation.stamped{width:62px;height:62px;min-height:62px;margin:0 56px 0 8px}
+    .ms-sheet.band-open .vband,.ms-sheet.band-open[data-state="pass"] .vband{max-height:none}
+    .ms-sheet .lg-foot,.ms-foot0{min-height:44px}
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .ms-tray{transition:none}
+  .ms-sheet.is-landing.is-stamped .ms-band-t{animation:none}
+  .ms-dot i,.ms-stub-t svg,.ms-tables-t svg,.ms-atwork summary svg,.ms-choice-b,.ms-tile{transition:none}
+}

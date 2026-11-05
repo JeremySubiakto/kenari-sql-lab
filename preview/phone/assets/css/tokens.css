@@ -1,0 +1,210 @@
+/* Design tokens, ported from Passbook Noir, plus the canary role from docs/DESIGN.md.
+   Each color has one job:
+   canary   what needs you right now (blanks, Run, Next, first-run call to action)
+   terminal --mc, dark in both themes: what you write
+   paper    what came back: results and printouts. Never buttons.
+   violet   approval only: the stamp and UV print
+   amber    --help: the word to fix
+   Component rules use these tokens only. */
+:root{
+  color-scheme:dark;
+  --f-display:"Mona Sans","Bahnschrift","Avenir Next","Segoe UI Variable Display","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Atkinson Hyperlegible Next","Atkinson Hyperlegible","Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+  /* Ground: deep petrol ink */
+  --ground:#06181D;
+  --ground-2:#091F26;
+  --ground-3:#0E2A32;
+  --ground-4:#14363F;
+  --hair:#1D424C;
+  --hair-2:#2F5E69;
+  --text:#EAF2EE;
+  --text-2:#BCD2CD;
+  --text-3:#93AFAC;
+  --verd:#7FD6C4;
+  --focus:#F4EDDB;
+  --code-bg:rgba(127,214,196,.1);
+  --code-fg:#BFEBDF;
+  --term:#A6E6D8;
+  --term-line:rgba(127,214,196,.55);
+  --ticket:#10303A;
+  --ticket-hair:#2A5863;
+  --cover:#0F3640;
+  --cover-2:#1A4B57;
+  --topbar:rgba(6,24,29,.86);
+  --bar-solid:rgba(6,24,29,.975);
+  --lace-rgb:127,214,196;
+  --lace-a:.15;
+  --lace-b:.14;
+  --weave-rgb:127,214,196;
+  --cta-bg:#F2EBD9;
+  --cta-ink:#12242B;
+  --cta-edge:#B9B199;
+  --cta-hair:rgba(18,36,43,.34);
+  --ribbon-done:#F2EBD9;
+  --ribbon-rest:rgba(127,214,196,.42);
+  --medal-rest:#3D7480;
+  --medal-text:#D8E6E2;
+  --overlay:rgba(2,12,15,.66);
+  --shadow-paper:0 1px 0 rgba(255,255,255,.35) inset,0 28px 60px -18px rgba(0,0,0,.75),0 6px 16px -4px rgba(0,0,0,.5);
+  --shadow-book:0 50px 90px -30px rgba(0,0,0,.85),0 14px 34px -10px rgba(0,0,0,.6);
+  --shadow-menu:0 18px 44px -10px rgba(0,0,0,.7);
+  --uv-rgb:168,132,255;
+  --uv-wash:rgba(112,64,255,.3);
+  --uv-blend:screen;
+  --shadow-chip:0 10px 24px -8px rgba(0,0,0,.65);
+  --shadow-key:0 8px 18px -6px rgba(0,0,0,.5);
+  --shadow-key-down:0 3px 8px -4px rgba(0,0,0,.5);
+  --shadow-slip:0 18px 36px -14px rgba(0,0,0,.6);
+  --shadow-slip-hi:0 24px 40px -14px rgba(0,0,0,.6);
+  --shadow-slip-lo:0 8px 16px -8px rgba(0,0,0,.6);
+  --shadow-mc:0 30px 60px -28px rgba(0,0,0,.7);
+  --shadow-mini:0 8px 18px -10px rgba(0,0,0,.6);
+  --shadow-help:0 10px 22px -10px rgba(0,0,0,.8);
+  --help:#F3BF6B;
+  --help-bg:rgba(243,191,107,.18);
+
+  /* The terminal stays dark in both themes: a slab of the vault */
+  --mc:#04131A;
+  --mc-2:#0A222A;
+  --mc-3:#102E37;
+  --mc-hair:#21474F;
+  --mc-text:#EAF2EE;
+  --mc-text-2:#B8CFCA;
+  --mc-text-3:#8BA9A6;
+  --mc-edge:#000A0D;
+  --ed-focus:rgba(133,220,201,.6);
+  --mc-divider:rgba(255,255,255,.05);
+  --mc-lip:rgba(255,255,255,.04);
+  --mc-glint:rgba(255,255,255,.08);
+  --mc-hover:rgba(255,255,255,.04);
+  --led-glow:rgba(247,239,217,.55);
+  --blank-glow:rgba(247,239,217,.34);
+  --blank-focus:rgba(133,220,201,.5);
+  --blank-focus-2:rgba(133,220,201,.28);
+  --err-bg:rgba(243,191,107,.2);
+  --mc-code-bg:rgba(133,220,201,.12);
+  --mc-code-fg:#BFEBDF;
+  --caret:#F4EDDB;
+  --sel:rgba(127,214,196,.34);
+  --sx-kw:#85DCC9;
+  --sx-id:#EAF2EE;
+  --sx-str:#EBC98E;
+  --sx-num:#9CD5FF;
+  --sx-fn:#C5D9FF;
+  --sx-com:#7F9E9C;
+  --sx-pun:#93AFAC;
+  --led:#F7EFD9;
+  --led-off:rgba(247,239,217,.085);
+
+  /* Paper stays paper: a ledger under a desk lamp */
+  --paper:#F0E9D7;
+  --paper-2:#E8E3CE;
+  --paper-hi:#FBF6E6;
+  --paper-edge:#AFA78E;
+  --paper-band:#E3E5D0;
+  --paper-rule:#CDCEB7;
+  --paper-rule-2:#AEB19C;
+  --paper-ink:#16252D;
+  --paper-ink-2:#46555A;
+  --paper-ink-3:#566462;
+  --paper-code-bg:rgba(22,37,45,.07);
+  --paper-under:#9DBDB0;
+  --null-bg:rgba(22,37,45,.06);
+  --paper-slotshade:rgba(6,20,24,.42);
+  --key-hair:rgba(22,37,45,.28);
+  --on-ink-bg:rgba(255,255,255,.14);
+  --on-ink-edge:rgba(0,0,0,.45);
+  --hole:#06181D;
+  --help-ink:#6B4300;
+  --help-mark:#FFD48A;
+
+  /* Canary: what needs you right now. Blanks, Run, Next and the first-run call to action. Nothing else. */
+  --canary:#FFD83A;
+  --canary-hi:#FFE676;
+  --canary-lo:#B38C00;
+  --canary-ink:#221B00;
+  --canary-line:rgba(34,27,0,.28);
+  --canary-ring:rgba(255,216,58,.42);
+  --canary-wash:rgba(255,216,58,.16);
+  --canary-text:#FFD83A;
+
+  /* Violet is approval only: the stamp and UV print */
+  --stamp-paper:#5620D0;
+  --uv-paper-rgb:86,32,208;
+  --foil:#D9CDA6;
+  --gutter-shade:rgba(22,37,45,.42);
+
+  --gutter:clamp(16px,3vw,44px);
+  --page-w:1680px;
+  --topbar-h:52px;
+  --row:30px;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --ground:#DAE5E1;
+  --ground-2:#E3ECE8;
+  --ground-3:#F0F5F1;
+  --ground-4:#F8FAF6;
+  --hair:#B4C8C2;
+  --hair-2:#7F9D97;
+  --text:#08232A;
+  --text-2:#2A4850;
+  --text-3:#3F5D64;
+  --verd:#0A635A;
+  --focus:#0A3A44;
+  --code-bg:rgba(10,99,90,.1);
+  --code-fg:#07483F;
+  --term:#07544B;
+  --term-line:rgba(10,99,90,.6);
+  --ticket:#F3F7F3;
+  --ticket-hair:#9CB6AF;
+  --cover:#0F3640;
+  --cover-2:#1A4B57;
+  --topbar:rgba(218,229,225,.88);
+  --bar-solid:rgba(218,229,225,.98);
+  --lace-rgb:9,84,84;
+  --lace-a:.2;
+  --lace-b:.13;
+  --weave-rgb:9,84,84;
+  --cta-bg:#0B2C34;
+  --cta-ink:#F4EEDE;
+  --cta-edge:#02161B;
+  --cta-hair:rgba(244,238,222,.36);
+  --ribbon-done:#0B2C34;
+  --ribbon-rest:rgba(9,84,84,.42);
+  --medal-rest:#588383;
+  --medal-text:#0B2C34;
+  --overlay:rgba(8,35,42,.42);
+  --shadow-paper:0 1px 0 rgba(255,255,255,.7) inset,0 26px 46px -20px rgba(8,40,48,.5),0 4px 12px -3px rgba(8,40,48,.28);
+  --shadow-book:0 44px 70px -30px rgba(8,40,48,.6),0 12px 28px -10px rgba(8,40,48,.34);
+  --shadow-menu:0 18px 44px -12px rgba(8,40,48,.4);
+  --uv-rgb:86,32,208;
+  --uv-wash:rgba(112,64,255,.2);
+  --uv-blend:multiply;
+  --shadow-chip:0 10px 20px -10px rgba(8,40,48,.5);
+  --shadow-key:0 8px 16px -8px rgba(8,40,48,.4);
+  --shadow-key-down:0 3px 8px -4px rgba(8,40,48,.4);
+  --shadow-slip:0 18px 30px -16px rgba(8,40,48,.5);
+  --shadow-slip-hi:0 24px 34px -16px rgba(8,40,48,.5);
+  --shadow-slip-lo:0 8px 14px -8px rgba(8,40,48,.5);
+  --shadow-mc:0 30px 50px -28px rgba(8,40,48,.6);
+  --shadow-mini:0 8px 16px -10px rgba(8,40,48,.4);
+  --shadow-help:0 10px 22px -10px rgba(0,0,0,.7);
+  --help:#7A4C00;
+  --help-bg:rgba(160,104,0,.14);
+  --canary:#FFCF1F;
+  --canary-hi:#FFDE5C;
+  --canary-lo:#8F6E00;
+  --canary-ink:#1E1800;
+  --canary-line:rgba(30,24,0,.5);
+  --canary-ring:rgba(143,110,0,.45);
+  --canary-wash:rgba(255,207,31,.3);
+  --canary-text:#6B5200;
+  --paper:#F7F1E1;
+  --paper-2:#F0ECD9;
+  --paper-band:#EAEDD9;
+  --paper-rule:#D3D5BF;
+  --hole:#C4D3CE;
+}

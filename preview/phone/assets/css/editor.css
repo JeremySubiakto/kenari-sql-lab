@@ -1,0 +1,302 @@
+/* The SQL editor: Noir's terminal, a transparent textarea over a highlighted pre.
+   Options on any ancestor or on .ed itself:
+   --ed-max-h  caps the height, for example the mission console's 40 percent of the pane
+   --ed-lh     line height, if a short layout needs a tighter editor */
+
+.ed{
+  --ed-font:15px;
+  --ed-lh:26px;
+  --ed-pad-y:11px;
+  --ed-pad-x:14px;
+  position:relative;
+  display:block;
+  min-width:0;
+  background:var(--mc);
+  color:var(--sx-id);
+}
+
+/* One scroll box holds both layers and the line numbers, so they cannot drift apart. */
+.ed-scroll{
+  overflow:auto;
+  max-height:min(calc(var(--ed-max,24)*var(--ed-lh) + 2*var(--ed-pad-y)),var(--ed-max-h,100vh));
+  scrollbar-width:thin;
+  scrollbar-color:var(--mc-hair) transparent;
+}
+.ed-scroll::-webkit-scrollbar{width:10px;height:10px}
+.ed-scroll::-webkit-scrollbar-thumb{background:var(--mc-hair);border-radius:5px;border:2px solid var(--mc)}
+.ed-scroll::-webkit-scrollbar-corner,.ed-scroll::-webkit-scrollbar-track{background:transparent}
+.ed-grid{display:flex;align-items:stretch;width:max-content;min-width:100%}
+
+/* Line numbers stay put when a long line scrolls sideways */
+.ed-g{
+  flex:none;
+  position:sticky;
+  left:0;
+  z-index:3;
+  min-width:calc(var(--ed-digits,2)*1ch + 22px);
+  padding:var(--ed-pad-y) 10px var(--ed-pad-y) 8px;
+  background:var(--mc);
+  border-right:1px solid var(--mc-divider);
+  color:var(--mc-text-3);
+  font:400 12.5px/var(--ed-lh) var(--f-mono);
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  -webkit-user-select:none;
+  user-select:none;
+  cursor:text;
+}
+.ed-g div{height:var(--ed-lh)}
+.ed.focused .ed-g div.on{color:var(--mc-text)}
+
+.ed-code{
+  position:relative;
+  flex:1 0 auto;
+  min-height:calc(var(--ed-min,6)*var(--ed-lh) + 2*var(--ed-pad-y));
+}
+
+/* These two rules are what keep the layers aligned. Every property that moves text is stated once, for both. */
+.ed-hl,.ed-ta,.ed-probe{
+  font:400 var(--ed-font)/var(--ed-lh) var(--f-mono);
+  font-stretch:normal;
+  font-synthesis:none;
+  font-kerning:none;
+  font-variant-ligatures:none;
+  font-feature-settings:"liga" 0,"calt" 0,"kern" 0;
+  letter-spacing:0;
+  word-spacing:0;
+  text-indent:0;
+  text-transform:none;
+  text-align:left;
+  text-rendering:geometricPrecision;
+  tab-size:2;
+  -moz-tab-size:2;
+  white-space:pre;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.ed-hl,.ed-ta{
+  margin:0;
+  border:0;
+  padding:var(--ed-pad-y) calc(var(--ed-pad-x) + 3ch) var(--ed-pad-y) var(--ed-pad-x);
+  box-sizing:border-box;
+}
+.ed-hl{
+  position:relative;
+  z-index:1;
+  display:block;
+  min-height:100%;
+  overflow:visible;
+  pointer-events:none;
+  color:var(--sx-id);
+}
+.ed-ta{
+  position:absolute;
+  z-index:2;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  resize:none;
+  outline:none;
+  border-radius:0;
+  -webkit-appearance:none;
+  appearance:none;
+  background:transparent;
+  color:transparent;
+  -webkit-text-fill-color:transparent;
+  caret-color:var(--caret);
+}
+.ed-ta::placeholder{color:var(--mc-text-3);-webkit-text-fill-color:var(--mc-text-3);opacity:1}
+.ed-ta::selection{background:var(--sel);color:transparent;-webkit-text-fill-color:transparent}
+.ed[data-readonly] .ed-ta{caret-color:transparent;cursor:default}
+.ed-probe{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none}
+
+/* Tokens share the one font face. A hairline stroke gives keywords their weight without changing any width. */
+.ed-hl span{font:inherit;font-synthesis:none;letter-spacing:0}
+.ed-hl .t-kw{-webkit-text-stroke:.28px currentColor}
+.ed-hl .t-err,.ed-hl .t-err span{color:var(--help-mark)}
+.ed-hl .t-err{-webkit-text-stroke:.28px currentColor}
+
+/* A blank waits in canary. The selected one gets a ring and no selection tint, so it never looks weaker. */
+.ed-hl .t-blank{
+  position:static;
+  background:var(--canary);
+  color:var(--canary-ink);
+  box-shadow:0 0 0 1px var(--canary);
+  -webkit-text-stroke:.28px currentColor;
+}
+.ed-hl .t-blank.on{
+  box-shadow:0 0 0 1px var(--canary),0 0 0 2.5px var(--mc),0 0 0 4px var(--canary);
+  animation:ed-blankpulse 1.6s ease-in-out infinite;
+}
+@keyframes ed-blankpulse{50%{box-shadow:0 0 0 1px var(--canary),0 0 0 2.5px var(--mc),0 0 0 4px var(--canary-ring)}}
+.ed.on-blank .ed-ta::selection{background:transparent}
+/* The word to fix keeps its amber while selected */
+.ed.on-mark .ed-ta::selection{background:var(--err-bg)}
+
+/* Where the caret is */
+.ed-cur{
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(var(--ed-pad-y) + var(--ed-line,0)*var(--ed-lh));
+  height:var(--ed-lh);
+  background:var(--mc-hover);
+  pointer-events:none;
+  opacity:0;
+}
+.ed.has-line .ed-cur{opacity:1}
+
+/* Focus shows around the whole editor. It sits above the scroll box, so nothing paints over it. */
+.ed::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none}
+.ed.focused::after{box-shadow:inset 0 0 0 1.5px var(--ed-focus)}
+
+/* A hint that a long line carries on to the right */
+.ed::before{
+  content:"";
+  position:absolute;
+  right:0;
+  top:0;
+  bottom:0;
+  width:24px;
+  z-index:3;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--mc));
+  opacity:0;
+  transition:opacity .15s;
+}
+.ed.more-right::before{opacity:1}
+
+/* ---------- Suggestions: a terminal slip under the word being typed ---------- */
+.ed-ac{
+  position:fixed;
+  z-index:80;
+  width:min(420px,calc(100vw - 16px));
+  background:var(--mc-2);
+  color:var(--mc-text);
+  border-radius:4px;
+  box-shadow:0 0 0 1px var(--mc-hair),var(--shadow-menu);
+  font-family:var(--f-body);
+  overflow:hidden;
+}
+.ed-ac-list{padding:4px;max-height:208px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--mc-hair) transparent}
+.ed-ac-i{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:baseline;
+  gap:12px;
+  width:100%;
+  min-height:32px;
+  padding:4px 8px;
+  border-radius:3px;
+  text-align:left;
+  color:var(--mc-text-2);
+  cursor:pointer;
+}
+.ed-ac-i code{
+  background:none;
+  padding:0;
+  color:var(--mc-text);
+  font:500 14px/1.5 var(--f-mono);
+  white-space:nowrap;
+}
+.ed-ac-i[data-kind="kw"] code{color:var(--sx-kw)}
+.ed-ac-i[data-kind="fn"] code{color:var(--sx-fn)}
+.ed-ac-i span{font-size:14px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ed-ac-i:hover{background:var(--mc-hover)}
+.ed-ac-i.next{box-shadow:inset 0 0 0 1px var(--mc-hair)}
+.ed-ac-i[aria-selected="true"]{background:var(--mc-3);box-shadow:inset 0 0 0 1px var(--ed-focus);color:var(--mc-text)}
+.ed-ac-foot{
+  padding:5px 12px 6px;
+  border-top:1px solid var(--mc-divider);
+  color:var(--mc-text-3);
+  font-size:13px;
+  line-height:1.3;
+}
+@media (pointer:coarse){
+  .ed-ac-i{min-height:44px;align-items:center}
+  .ed-ac-foot{display:none}
+}
+
+/* ---------- Phone: a key bar that rides above the on-screen keyboard ---------- */
+.ed-keybar{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:calc(var(--kb-inset,0px) + var(--ed-bar-lift,0px));
+  z-index:70;
+  background:var(--mc-2);
+  border-top:1px solid var(--mc-hair);
+  box-shadow:var(--shadow-menu);
+  padding-bottom:var(--kb-safe,env(safe-area-inset-bottom,0px));
+}
+.ed-keys{
+  display:flex;
+  gap:6px;
+  padding:5px max(8px,env(safe-area-inset-right,0px)) 5px max(8px,env(safe-area-inset-left,0px));
+  overflow-x:auto;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
+}
+.ed-keys::-webkit-scrollbar{display:none}
+.ed-key{
+  flex:none;
+  min-width:44px;
+  height:44px;
+  padding:0 11px;
+  border-radius:4px;
+  background:var(--mc-3);
+  box-shadow:0 2px 0 var(--mc-edge);
+  color:var(--mc-text);
+  font:500 15px/1 var(--f-mono);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.ed-key:active{background:var(--mc-hair);box-shadow:none;transform:translateY(1px)}
+.ed-key-next{font:600 15px/1 var(--f-body);background:transparent;box-shadow:inset 0 0 0 1px var(--mc-text-3)}
+.ed-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;max-width:230px;text-align:left}
+.ed-chip code{background:none;padding:0;color:var(--mc-text);font:500 15px/1.1 var(--f-mono);white-space:nowrap}
+.ed-chip small{font:400 12.5px/1.1 var(--f-body);color:var(--mc-text-2);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Room to scroll the editor clear of the key bar and the keyboard, even when it is the last thing on the page */
+html[data-keybar="up"] body{padding-bottom:calc(var(--keybar-h,0px) + var(--kb-inset,0px) + var(--ed-bar-lift,0px))}
+
+/* Run rides with the key bar when a screen asks for it (runKey), because the keyboard covers the bottom bar. */
+.ed-keyrow{display:flex;align-items:center}
+.ed-keyrow .ed-keys{flex:1 1 0;min-width:0}
+.ed-key.ed-key-run{flex:none;min-width:76px;height:44px;margin:5px max(8px,env(safe-area-inset-right,0px)) 5px 0;padding:0 16px;background:var(--canary);color:var(--canary-ink);box-shadow:inset 0 0 0 1px var(--canary-line),0 2px 0 var(--canary-lo);font:600 16px/1 var(--f-body)}
+.ed-key.ed-key-run:active{background:var(--canary-hi);box-shadow:inset 0 0 0 1px var(--canary-line)}
+
+/* Touch devices get 16px text, because iOS zooms the page on anything smaller */
+@media (pointer:coarse),(max-width:999px){
+  .ed{--ed-font:16px;--ed-lh:27px;--ed-pad-x:10px}
+  .ed-g{padding-right:7px;padding-left:5px;min-width:calc(var(--ed-digits,2)*1ch + 12px)}
+}
+
+/* Below 1000px long lines soft-wrap, so nobody scrolls sideways. Both layers keep the same width and the same rules. */
+@media (max-width:999px){
+  .ed-scroll{overflow-x:hidden}
+  .ed-g{display:none}
+  .ed-grid{width:100%;min-height:100%}
+  .ed-code{flex:1 1 0;min-width:0}
+  .ed-hl,.ed-ta{white-space:pre-wrap;overflow-wrap:anywhere;padding-right:var(--ed-pad-x)}
+  .ed::before{display:none}
+  /* No continuous animation on a phone: the selected blank keeps its ring and stays still. */
+  .ed-hl .t-blank.on{animation:none}
+}
+
+/* Windows high contrast drops backgrounds, so blanks and the marked word get real outlines */
+@media (forced-colors:active){
+  .ed-hl .t-blank{outline:1px solid CanvasText;outline-offset:1px}
+  .ed-hl .t-blank.on{outline:3px solid Highlight}
+  .ed-hl .t-err{outline:2px solid Highlight}
+  .ed-ac-i[aria-selected="true"]{outline:2px solid Highlight;outline-offset:-2px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .ed-hl .t-blank.on{animation:none}
+  .ed::before{transition:none}
+  .ed-key:active{transform:none}
+}

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-test | Kenari SQL Lab</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  body{padding:24px var(--gutter)}
+  h1{font-size:26px;margin-bottom:8px}
+  #summary{font:500 16px/1.5 var(--f-mono);margin:10px 0 18px;color:var(--text-2)}
+  #summary b{color:var(--text)}
+  #fails li{padding:8px 0;border-top:1px solid var(--hair);font:400 14px/1.45 var(--f-mono);overflow-wrap:anywhere}
+  #fails b{color:var(--help)}
+  .sections{font:400 14.5px/1.6 var(--f-mono);color:var(--text-3);margin-bottom:16px}
+</style>
+<script defer src="assets/js/core/data.js"></script>
+<script defer src="assets/js/core/check.js"></script>
+<script defer src="assets/js/core/reference.js"></script>
+<script defer src="assets/js/lessons/level-0.js"></script>
+<script defer src="assets/js/lessons/level-1.js"></script>
+<script defer src="assets/js/lessons/level-2.js"></script>
+<script defer src="assets/js/lessons/level-3.js"></script>
+<script defer src="assets/js/lessons/level-4.js"></script>
+<script defer src="assets/js/lessons/level-5.js"></script>
+<script defer src="assets/js/lessons/level-6.js"></script>
+<script defer src="assets/js/lessons/level-7.js"></script>
+<script defer src="assets/js/lessons/level-8.js"></script>
+<script defer src="assets/js/lessons/level-9.js"></script>
+<script defer src="assets/js/app/glyphs.js"></script>
+<script defer src="assets/js/app/state.js"></script>
+<script defer src="assets/js/app/engine.js"></script>
+<script defer src="assets/js/app/evaluate.js"></script>
+<script defer src="assets/js/app/ui.js"></script>
+<script defer src="assets/js/app/main.js"></script>
+<script defer src="tests/selftest.js"></script>
+</head>
+<body>
+<h1>Kenari self-test</h1>
+<p class="page-lead">Runs every mission through the real browser engine, using the same path the mission screen uses.</p>
+<div id="summary" role="status">Starting.</div>
+<div class="sections" id="sections"></div>
+<ul id="fails"></ul>
+</body>
+</html>
