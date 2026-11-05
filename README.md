@@ -1,5 +1,7 @@
 # Kenari Collection SQL Lab
 
+**Try it, free: <https://jeremysubiakto.github.io/kenari-sql-lab/>**
+
 A static website that takes a nervous beginner to professional SQL, for work in a bank's collection unit. You run real queries on a made-up bank's data, one small win at a time, from "press the button" to a final exam.
 
 **Bank Kenari is made up.** Every bank, branch, customer, loan, phone number and colleague in this project is invented. It does not name or stand for any real bank or person.
@@ -91,3 +93,11 @@ For each mission it checks that the solution runs and passes, that every planned
 **Driving the real site.** `scripts/dev/cdp.mjs` is a small driver for a private headless Chrome, with no dependencies. Its header comment shows how to use it. `docs/DESIGN.md` ends with the acceptance checks to run with it.
 
 Automated checks only reach so far. Real phone keyboards, real Windows machines and how the optional sound actually sounds still need a person to try them.
+
+## Report a problem
+
+Open an [issue on GitHub](https://github.com/JeremySubiakto/kenari-sql-lab/issues/new?template=problem.md). Please do not paste real customer data or anything from your workplace, because issues are public.
+
+## License
+
+Code is under the [MIT license](LICENSE). The lessons are under [CC BY-NC 4.0](LICENSE-LESSONS.md), so share them with credit, but not for sale. sql.js and the fonts load from their own hosts and keep their own licenses.
