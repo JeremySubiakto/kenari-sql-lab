@@ -8,6 +8,7 @@ Static site with no build step. Classic scripts with `defer`, all hanging off on
 index.html                        shell: header, nav, <main id="view">, overlays, script tags in order
 .nojekyll
 assets/icon.svg                   favicon, a stamp mark
+assets/img/og.png                 link preview, 1200x630, under 300 KB so WhatsApp shows it
 assets/css/tokens.css             color, type and spacing tokens, light and dark
 assets/css/base.css               reset, typography, buttons, forms, layout helpers
 assets/css/components.css         shared parts only: keys, terminal, syntax colors, code block, paper, ledger, ticket, verdict band, help slip, stamp, toast, popover, modal, sheet, rosette, weave
@@ -30,10 +31,11 @@ assets/js/app/editor.js           Kenari.Editor
 assets/js/app/evaluate.js         Kenari.evaluate, Kenari.expected
 assets/js/app/mission.js          Kenari.Mission  (routes #/m/ID)
 assets/js/app/home.js             Kenari.Home     (routes #/ and #/journey and #/passbook)
+assets/js/app/share.js            Kenari.Share    (the Share this rank picture on the rank-up sheet)
 assets/js/app/review.js           Kenari.Review   (route #/review)
 assets/js/app/scratch.js          Kenari.Scratch  (route #/scratchpad)
 assets/js/app/sheet.js            Kenari.Sheet    (route #/cheatsheet)
-assets/js/app/main.js             router, boot, settings menu
+assets/js/app/main.js             router, boot, settings menu, Kenari.About (route #/about)
 test.html, tests/selftest.js      runs every mission through the real browser engine
 tests/fixtures.json               DONE. Expected result digests from scripts/verify.mjs --fixtures
 ```
@@ -54,8 +56,11 @@ Also from `main.js`:
 
 - `Kenari.navigate(hash)` goes to a route. `Kenari.refresh()` rebuilds the current screen.
 - `Kenari.Header.hold()` stops the Saldo from updating, and `Kenari.Header.release()` ticks it. On a pass, call `hold()` before `State.recordPass`, then `release()` in the stamp's `onImpact`. `Kenari.Header.refresh()` repaints the Saldo and the Review badge.
-- `document.documentElement.dataset.route` is `home`, `mission`, `review`, `scratchpad`, `cheatsheet` or `notfound`, so a screen's CSS can target `html[data-route="mission"]`.
+- `document.documentElement.dataset.route` is `home`, `mission`, `review`, `scratchpad`, `cheatsheet`, `about` or `notfound`, so a screen's CSS can target `html[data-route="mission"]`.
 - `Kenari.levels` and friends also load in `test.html`, which has no `#view`, so nothing there routes.
+- Below 1000px: `.tabbar` is the site navigation, hidden on `html[data-route="mission"]`, `html[data-reviewing]` and while a field has the keyboard (`html[data-typing]`). `--tabbar-h` and `--shell-bottom` give its height, and `body` keeps that much bottom padding.
+- `html[data-section]` is `journey` or `passbook` on those routes. Below 1000px, CSS shows one section of Home at a time from it. Moving between sections fires `kenari:section` on `document`.
+- `--vvh` on `:root`, below 1000px: the visible height from `visualViewport`. Locked screens use `height:var(--vvh,100dvh)`.
 - `Kenari.booted` turns true at the end of `main.js`. Until then, a script or stylesheet of ours that fails to load, or an error during boot, replaces the opening note with a message and a reload link. An inline script in `index.html` does this.
 
 ## Kenari.Engine
@@ -174,7 +179,7 @@ UI.rich(html, {inline})            // element (div, or span when inline). Handle
                                    // Terms open the glossary popover. Kol and collectibility also show the five grades as a table.
 UI.ledger(result, {max, compact, animate, title, copy, foot, kept, actions, label, onPrinted})
   // element: the printed result table with its row count and "Copy for Excel". Paper color, rows in their own scroll box, sticky header.
-  // kept: {of: 502} ends the count as "37 rows kept, of 502". actions: nodes added to the foot, such as Copy for Claude.
+  // kept: {of: 502} ends the count as "37 rows kept, of 502". actions: nodes added to the foot, such as Copy for AI.
   // foot: false drops the foot, as in a target preview. compact: the small version for tickets and peeks.
   // "More columns" appears only when real result columns are off-screen. The print is capped at 20 rows and under one second.
   // The element also has:
@@ -203,6 +208,7 @@ UI.copyForClaude({kind, lesson, sql, outcome})     // kind: 'mission' | 'review'
 More from `UI`, for screens that need the signature pieces:
 
 ```js
+UI.isWide()                  // true at 1000px and wider. Below that, the phone layout.
 UI.motionOK(), UI.coarse(), UI.isMac(), UI.runKeys()   // runKeys: 'Ctrl Enter', or the Command key form on a Mac. Label Run with it.
 UI.whenIdle(fn), UI.anim(el, frames, opts)             // anim plays and then cancels itself, and does nothing under reduced motion
 UI.icons                     // HTML strings: arrow, left, right, down, up, check, hook, shield, pin, close
@@ -216,6 +222,7 @@ UI.jolt(el, strength), UI.prepFlare()
 UI.guilloche(hostEl, size, {k, uv})  // counter-rotating rosettes in a .gl host. Repaints on theme change. Returns {prepUV(), uvWrap, destroy()}. Set --mx and --my on the host for the UV lamp.
 UI.drawUV(canvas, size, {noWord}), UI.prepFlare(rings), UI.sound, UI.applyTheme()
 UI.plainOf(html), UI.toTSV(result), UI.SQL_KEYWORDS, UI.SQL_FUNCTIONS, UI.KOL_GRADES
+UI.scrollTable(table)        // below 1000px: puts a table that is already in the page in its own sideways scroll box, with the More columns cue. UI.rich does this for table.plain.
 document.addEventListener('kenari:theme', fn)   // fires when the theme changes, for anything drawn on a canvas
 ```
 
@@ -249,6 +256,7 @@ const ed = Editor.create(hostEl, {
 ed.value                 // get and set
 ed.readOnly              // get and set. The mission screen locks the editor while a pass prints.
 ed.insert(text)          // at the caret or over the selection, then jumps to the next blank
+ed.insert(text, {list:true})   // the same, but a column going into a SELECT list brings the comma it needs. The mission screen uses this below 1000px.
 ed.focus()
 ed.blur()                // leaves at once, key bar included. On its own, the key bar waits a moment after focus leaves, so a tap on another control is not lost.
 ed.selectFirstBlank()
@@ -270,24 +278,51 @@ ed.markedRect()          // {left, top, right, bottom, width, height} of the mar
 ed.replaceMarked(text)   // the one-click fix. Takes text or explainError's {from, to}. Can be undone.
 ed.replaceAll(text)      // Start over and Put it in the editor. Unlike setting ed.value, this can be undone.
 ed.caretRect()           // where the caret is on screen
+ed.revealCaret()         // scrolls the editor's own box to the caret or the selected blank
+Editor.create(host, {..., runKey: true})   // adds a canary Run key to the phone's key bar, for screens whose bottom bar hides under the keyboard. It calls onRun.
 ```
+
+Below 1000px wide the editor soft-wraps long lines and hides the line numbers. A locked page (one that cannot scroll) keeps the caret in view with the editor's own scroll box. Without a lock it scrolls the page, as before.
 
 CSS and page hooks:
 
 - `--ed-max-h` on `.ed` or any ancestor caps its height, for example the console's 40 percent of the pane. `--ed-lh` changes the line height.
-- `--ed-bar-lift` on `:root`: how far above the keyboard the key bar sits, so a bottom bar can stay under it.
+- `--ed-bar-lift` on `:root`: how far above the keyboard the key bar sits, so a bottom bar can stay under it. The mission screen hides its bottom bar with the keyboard up, so it leaves this at 0.
 - While the key bar is up, the editor sets on `:root`: `--kb-inset` (keyboard height, from `visualViewport`), `--keybar-h`, and `data-keybar="up"`. The first two are not set at other times, so read them with a fallback: `var(--kb-inset,0px)`.
-- The key bar shows on touch devices below 1000px wide. There, suggestions appear as chips inside the key bar, so nothing covers the code. Tablets at 1000px and wider get the popup with 44px rows.
+- The key bar shows on touch devices below 1000px wide. Its keys sit in two short rows that scroll together (`.ed-keys.ed-keys-2` holding `.ed-krow`s): words on top, symbols below. There, suggestions appear as chips in place of the words' row, so nothing covers the code and the bar keeps its height. Tablets at 1000px and wider get the popup with 44px rows.
+- The mission editor is 14px below 1000px. On iOS, `main.js` adds `maximum-scale=1` to the viewport meta, so focusing a field under 16px does not zoom the page. Safari still allows pinch zoom.
 - While the key bar is up, `body` gets bottom padding so the editor can scroll clear of it, even when the console is the last thing on the page.
+
+## Kenari.Share
+
+The Share this rank button on the rank-up sheet. It makes a page of the passbook with the level's rank stamp, as a 1080x1350 PNG drawn on a canvas on the device. Nothing is uploaded.
+
+```js
+Share.image(level)     // level object or number. Promise<Blob>, the PNG. The last picture is kept, so asking again gives the same one.
+Share.prepare(level)   // makes it in the background once the sheet has settled (1.2 s, then when the browser is idle), so the tap shares at once
+Share.rank(level)      // what the button does: navigator.share({files: [png], title: 'Kenari Collection SQL Lab'}) where the browser
+                       // can share files, otherwise a download named kenari-rank-<n>.png. A cancelled share does nothing, and any other
+                       // share error falls back to the download. If the picture cannot be made: toast 'The image could not be made on this browser.'
+                       // Resolves 'shared' | 'cancelled' | 'downloaded' | 'failed' | 'busy'
+```
+
+- The rows are `State.passbook()` lines, as the Passbook screen prints them: the last three passes up to the one that cleared the level, BALANCE B/F from the line before, short dates from `UI.stampDate(date, true).slice(0, 6)`, then `Rank: <rank>`. The stamp is `UI.rankStamp` dated the day the level was cleared. So the picture is the same whenever the sheet opens. A title too long for its column ends in an ellipsis.
+- Colours and fonts are read from the tokens on `:root` when it is drawn, so the light theme gives the light paper. The stamp SVG takes the `ink-s` filter and its colour with it, because an image cannot reach the page's defs or `currentColor`. Positions are measured from the approved mock (540x675 CSS px, drawn at 2x).
+- `rankUp` puts the button (`button.ghost.rk-share`) right after `.rk-act` and calls `prepare`.
 
 ## Screen modules
 
-Each exports `render(container, params)` returning an optional cleanup function. `main.js` routes `#/`, `#/journey`, `#/passbook`, `#/m/<id>`, `#/review`, `#/scratchpad`, `#/cheatsheet`, and shows a friendly not-found view otherwise. `#/journey` and `#/passbook` render Home and scroll to the element with `id="journey"` or `id="passbook"`, so Home must give those sections these ids. Moving between them does not rebuild Home. Params: Mission gets `{id, lesson}`, and Home gets `{section}` when there is one.
+Each exports `render(container, params)` returning an optional cleanup function. `main.js` routes `#/`, `#/journey`, `#/passbook`, `#/m/<id>`, `#/review`, `#/scratchpad`, `#/cheatsheet`, `#/about`, and shows a friendly not-found view otherwise. `#/about` is `Kenari.About` in `main.js`: the terms on the back of the passbook, reached from the About and privacy row in Settings. `#/journey` and `#/passbook` render Home and scroll to the element with `id="journey"` or `id="passbook"`, so Home must give those sections these ids. Below 1000px each opens as its own screen, at the top. Moving between them does not rebuild Home. Params: Mission gets `{id, lesson}`, and Home gets `{section}` when there is one.
 
 `main.js` sets a default title per route, scrolls to the top, and moves focus to `#view` unless the screen already placed focus inside it. Call `UI.setTitle` in `render` for a better title.
 
 `Kenari.Mission.mount(container, lesson, {mode: 'learn'|'review', onDone, onNext, nextLabel})` is what Review reuses. It returns a cleanup function.
 
+- Below 1000px the screen follows `docs/PHONE.md`: `root.dataset.step` is `learn`, `task` or `result`, and `mission.css` shows one step at a time. Review gets Task and Result only.
+- Below 1000px every dialog from `UI.modal` and `UI.sheet` adds a history entry, so Android's back key closes the top dialog instead of leaving the screen. Closing it another way steps back over that entry. At 1000px and wider history is untouched.
+- Below 1000px the last passes of this visit stay in memory, so coming back to a cleared mission restores its printout, stamp and Next without printing or recording again. Running or editing again drops it. A cleared mission with nothing kept shows a quiet Next (`.ms-qnext`) on its Task step.
+- Below 1000px an order mission puts its two chips after the tiles in the same scroll, and a half-built order does not run. A long request or verdict stops with a fade and a control (`.ms-req-more`, `.ms-band-more`) that gives it the step's height.
+- A lesson can carry `phone: [[from, to], ...]`: sentence swaps for `teach`, `task` and `hints` below 1000px, for wording that describes the laptop layout. The laptop text is not touched.
 - Learn mode: `onDone({ok:true, firstTime, levelCleared, lesson})` fires as the stamp lands.
 - Review mode: no teaching, no blanks, no drafts, and nothing is written to `State`. Hints appear after two failed runs. `onDone({ok, answerSeen, attempts, lesson})` fires when the learner presses the Next key, so the stamp has been seen first, then `onNext()`. `nextLabel` is the key's text. Review owns `State.recordReview`.
 

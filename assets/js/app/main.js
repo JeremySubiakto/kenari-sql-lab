@@ -52,15 +52,16 @@
 
   /* ---------- Router ---------- */
   const ROUTES = [
-    { re: /^\/?$/, module: 'Home', nav: null, title: null },
+    { re: /^\/?$/, module: 'Home', nav: 'home', title: null },
     { re: /^\/journey\/?$/, module: 'Home', nav: 'journey', section: 'journey', title: 'Journey' },
     { re: /^\/passbook\/?$/, module: 'Home', nav: 'passbook', section: 'passbook', title: 'Passbook' },
     { re: /^\/m\/([\d.]+)\/?$/, module: 'Mission', nav: null, mission: true },
     { re: /^\/review\/?$/, module: 'Review', nav: 'review', title: 'Review' },
     { re: /^\/scratchpad\/?$/, module: 'Scratch', nav: 'scratchpad', title: 'Scratchpad' },
-    { re: /^\/cheatsheet\/?$/, module: 'Sheet', nav: 'cheatsheet', title: 'Cheat sheet' }
+    { re: /^\/cheatsheet\/?$/, module: 'Sheet', nav: 'cheatsheet', title: 'Cheat sheet' },
+    { re: /^\/about\/?$/, module: 'About', nav: null, title: 'About' }
   ];
-  const ROUTE_NAMES = { Home: 'home', Mission: 'mission', Review: 'review', Scratch: 'scratchpad', Sheet: 'cheatsheet' };
+  const ROUTE_NAMES = { Home: 'home', Mission: 'mission', Review: 'review', Scratch: 'scratchpad', Sheet: 'cheatsheet', About: 'about' };
 
   let cleanup = null;
   let currentModule = null;
@@ -77,7 +78,8 @@
 
   function scrollToSection(section) {
     const go = () => {
-      const target = section ? document.getElementById(section) : null;
+      /* On a phone each section is its own screen, so it opens at the top. */
+      const target = section && UI.isWide() ? document.getElementById(section) : null;
       if (target) target.scrollIntoView({ block: 'start' });
       else window.scrollTo(0, 0);
     };
@@ -86,10 +88,13 @@
   }
 
   function setNav(nav) {
-    document.querySelectorAll('.nav a').forEach((a) => {
+    document.querySelectorAll('.nav a,.tabbar a').forEach((a) => {
       if (a.dataset.nav === nav) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
+    /* The tab bar has no Passbook tab: the Saldo in the header is its way in, so it carries the mark. */
+    if (nav === 'passbook') $('saldo').setAttribute('aria-current', 'page');
+    else $('saldo').removeAttribute('aria-current');
   }
 
   function route() {
@@ -101,6 +106,9 @@
     }
     closeMenu();
     UI.closeDialogs();
+    /* A field that left with the old screen may never report losing focus. */
+    delete document.documentElement.dataset.typing;
+    delete document.documentElement.dataset.section;
     if (!r) { teardown(); currentModule = null; setNav(null); renderNotFound(); afterRoute(); return; }
 
     const params = {};
@@ -120,10 +128,15 @@
     if (r.section) params.section = r.section;
 
     setNav(r.nav);
+    /* On a phone, CSS shows one section of Home at a time from this mark. */
+    if (r.section) document.documentElement.dataset.section = r.section;
+    else delete document.documentElement.dataset.section;
     /* Moving between sections of Home does not rebuild it. */
     if (currentModule === 'Home' && r.module === 'Home' && booted) {
       UI.setTitle(title);
       scrollToSection(r.section);
+      document.dispatchEvent(new CustomEvent('kenari:section', { detail: { section: r.section || null } }));
+      if (!UI.isWide() && !view.contains(document.activeElement)) view.focus({ preventScroll: true });
       return;
     }
 
@@ -186,8 +199,10 @@
     const badge = $('dueBadge');
     badge.hidden = !due;
     badge.textContent = due;
-    const link = document.querySelector('.nav a[data-nav="review"]');
-    if (link) link.setAttribute('aria-label', due ? 'Review, ' + due + ' due' : 'Review');
+    const tabBadge = $('tabDue');
+    tabBadge.hidden = !due;
+    tabBadge.textContent = due;
+    document.querySelectorAll('.nav a[data-nav="review"],.tabbar a[data-nav="review"]').forEach((link) => link.setAttribute('aria-label', due ? 'Review, ' + due + ' due' : 'Review'));
   }
   function paintHeader() {
     if (!held) paintSaldo(true);
@@ -199,6 +214,31 @@
     release() { held = false; paintSaldo(true); },
     refresh: paintHeader
   };
+
+  /* ---------- About: printed like the terms on the back of a passbook ---------- */
+  const REPORT_URL = 'https://github.com/JeremySubiakto/kenari-sql-lab/issues/new?template=problem.md';
+  K.About = {
+    render(host) {
+      const rows = [
+        ['What this is', 'A free course that takes you from your first query to professional SQL: ' + K.lessons.length + ' missions, with real SQLite running in your browser.'],
+        ['Bank Kenari', 'Bank Kenari is made up. Every bank, branch, customer and colleague here is invented, and none of it stands for a real bank or person.'],
+        ['Your privacy', 'Your progress stays in this browser. There is no account, no analytics and no tracking. Your queries stay on your device unless you copy them somewhere yourself.'],
+        ['Other services', 'The page loads its fonts from Google Fonts and the SQL engine from cdnjs or jsDelivr. Those hosts see a normal web request, as with any website.'],
+        ['Who made it', 'Made by Jeremy Subiakto.'],
+        ['License', 'Code: MIT. Lessons: CC BY-NC 4.0, so share them with credit, but not for sale.'],
+        ['Found a problem?', [UI.el('a', { href: REPORT_URL, target: '_blank', rel: 'noopener', text: 'Report it on GitHub' }), '. You need a free GitHub account.']]
+      ];
+      host.append(UI.el('div', { class: 'paper ab-book' },
+        UI.el('div', { class: 'ab-book-in' },
+          UI.el('h1', { lang: 'id', text: 'Syarat dan ketentuan' }),
+          UI.el('small', { text: 'Terms, on the back of your passbook' }),
+          UI.el('dl', {}, rows.map(([term, def]) => UI.el('div', {}, UI.el('dt', { text: term }), UI.el('dd', {}, def)))),
+          UI.el('p', { class: 'eoe', text: 'E. & O.E.' }))));
+    }
+  };
+  /* Already on About, the link changes nothing, so the computer's menu closes by hand. */
+  const aboutRow = () => UI.el('a', { class: 'menu-row', href: '#/about', onClick: () => { if (/^#\/about\/?$/.test(location.hash)) closeMenu(true); } }, UI.el('span', { text: 'About and privacy' }));
+  const madeBy = () => UI.el('p', { class: 'menu-made', text: 'Made by Jeremy Subiakto' });
 
   /* ---------- Settings ---------- */
   function downloadProgress() {
@@ -293,7 +333,7 @@
     if (refocus) $('gear').focus();
   }
   function openMenu() {
-    menuEl = UI.el('div', { class: 'menu', role: 'group', 'aria-label': 'Settings' }, settingsRows(() => closeMenu()));
+    menuEl = UI.el('div', { class: 'menu', role: 'group', 'aria-label': 'Settings' }, settingsRows(() => closeMenu()), aboutRow(), madeBy());
     $('top').append(menuEl);
     $('gear').setAttribute('aria-expanded', 'true');
     const first = menuEl.querySelector('button[aria-pressed="true"]');
@@ -304,31 +344,54 @@
     $('themeBtn').setAttribute('aria-label', 'Switch to the ' + (dark ? 'light' : 'dark') + ' theme');
   }
 
-  /* The phone menu: site navigation plus settings, in one sheet */
-  function openPhoneMenu() {
-    const due = State.dueReviews().length;
-    const link = (href, label, note) => UI.el('a', { class: 'menu-row', href }, UI.el('span', { text: label }), note ? UI.el('span', { text: note }) : null);
+  /* On a phone, the settings come up as a sheet. The tab bar handles navigation, so only the Passbook and About are linked here. */
+  function openSettingsSheet() {
     let sheet = null;
     const body = UI.el('div', {},
+      UI.el('div', { class: 'sheet-group' }, settingsRows(() => sheet && sheet.close())),
       UI.el('div', { class: 'sheet-group' },
-        UI.el('h3', { text: 'Go to' }),
-        link('#/', 'Home'),
-        link('#/journey', 'Journey'),
-        link('#/passbook', 'Passbook', State.doneCount() + ' cleared'),
-        link('#/review', 'Review', due ? due + ' due' : 'None due'),
-        link('#/scratchpad', 'Scratchpad'),
-        link('#/cheatsheet', 'Cheat sheet')),
-      UI.el('div', { class: 'sheet-group' }, settingsRows(() => sheet && sheet.close())));
+        UI.el('a', { class: 'menu-row', href: '#/passbook' }, UI.el('span', { text: 'Open your passbook' }), UI.el('span', { text: State.doneCount() + ' cleared' })),
+        aboutRow()),
+      madeBy());
     body.addEventListener('click', (e) => { if (e.target.closest('a')) sheet.close(); });
-    sheet = UI.sheet({ title: 'Menu', body });
+    sheet = UI.sheet({ title: 'Settings', body });
+  }
+
+  /* iOS zooms the whole page into any text box under 16px when it gets focus, and the mission editor
+     on a phone is 14px. maximum-scale=1 stops only that zoom: since iOS 10, Safari still lets people
+     pinch to zoom. Other browsers never get the setting. */
+  (function stopFocusZoom() {
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (ios && meta && !/maximum-scale/.test(meta.content)) meta.content += ', maximum-scale=1';
+  })();
+
+  /* While the on-screen keyboard is up, the tab bar steps aside, and fixed layouts follow the visible height. */
+  function trackPhoneViewport() {
+    const root = document.documentElement;
+    const isField = (t) => t && t.matches && t.matches('input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]');
+    document.addEventListener('focusin', (e) => {
+      if (isField(e.target) && !e.target.readOnly && UI.coarse() && !UI.isWide()) root.dataset.typing = '1';
+    });
+    document.addEventListener('focusout', (e) => {
+      if (isField(e.target)) delete root.dataset.typing;
+    });
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const place = () => {
+      if (UI.isWide()) root.style.removeProperty('--vvh');
+      else root.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+    };
+    vv.addEventListener('resize', place);
+    place();
   }
 
   function bindHeader() {
     $('gear').addEventListener('click', (e) => {
       e.stopPropagation();
+      if (!UI.isWide()) { openSettingsSheet(); return; }
       if (menuEl) closeMenu(); else openMenu();
     });
-    $('menuBtn').addEventListener('click', openPhoneMenu);
     $('themeBtn').addEventListener('click', () => {
       const dark = document.documentElement.getAttribute('data-theme') !== 'light';
       State.setSetting('theme', dark ? 'light' : 'dark');
@@ -348,6 +411,7 @@
   UI.applyTheme();
   paintThemeBtn();
   bindHeader();
+  trackPhoneViewport();
   paintSaldo(false);
   paintDue();
   State.onChange(paintHeader);

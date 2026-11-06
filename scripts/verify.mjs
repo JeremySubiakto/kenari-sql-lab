@@ -355,7 +355,7 @@ for (const L of LEVELS) {
   summary.push(`Level ${L.n} (${L.title}): ${missions - before.m} missions, ${errors - before.e} errors, ${warnings - before.w} warnings`);
 }
 
-if (levelArg === null && LEVELS.some((L) => L.n === 1) && todo !== 1) say('ERROR', 'all', `Mission 1.1's first-task comment must appear exactly once, found ${todo}`);
+if (todo) say('ERROR', 'all', `Lessons must not hold a leftover author to-do mark, found ${todo}`);
 
 if (flag('--fixtures')) {
   const dir = path.join(ROOT, 'tests');

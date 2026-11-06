@@ -23,6 +23,7 @@
 .hm-h1 span{display:block;white-space:nowrap}
 .hm-h1 .soft{color:var(--text-2)}
 [data-mode="back"] .hm-h1,[data-mode="done"] .hm-h1{font-size:clamp(28px,min(3.7vw,7.2vh),66px);line-height:1.05}
+.hm-who{margin:8px 0 6px;color:var(--text-2);font:400 16px/1.45 var(--f-body)}
 
 /* ---------- The main button is a queue ticket ---------- */
 .hm-cta{display:flex;margin:clamp(14px,3.2vh,36px) 0 clamp(10px,2.4vh,26px)}
@@ -304,6 +305,9 @@ dialog.rk::backdrop{background:var(--overlay)}
 .rk-can{margin-top:clamp(8px,1.6vh,14px);font-size:clamp(16.5px,1.5vw,19px);line-height:1.4;max-width:34em}
 .rk-held{margin-top:8px;font-size:15px;line-height:1.38;color:var(--paper-ink-2)}
 .rk-act{margin-top:clamp(12px,2.2vh,22px);display:flex}
+/* Share this rank: an outline under the main action. It keeps the .ghost inner line. */
+.rk-share{display:block;width:100%;min-height:46px;margin-top:8px;border:1px solid var(--paper-rule-2);border-radius:4px;background:none;color:var(--paper-ink);font:600 16px/1 var(--f-body)}
+.rk-share:hover{background:none}
 .rk-go{min-height:62px;max-width:100%;padding:8px 18px;justify-content:space-between;gap:14px;white-space:normal;text-align:left}
 .rk-go svg{width:20px;height:20px}
 .rk-go-t{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -321,73 +325,210 @@ dialog.rk::backdrop{background:var(--overlay)}
 }
 
 /* ---------- Tablet and phone ---------- */
+.hm-teasers,.hm-jl-bar{display:none}
 @media (max-width:999px){
-  .hm-hero-in{height:auto;display:flex;flex-direction:column;gap:0;padding:20px max(16px,env(safe-area-inset-right,0px)) 26px max(16px,env(safe-area-inset-left,0px))}
+  /* One section a screen: Home, then Journey and Passbook on their own tabs. */
+  html:not([data-section]) .hm-journey,html:not([data-section]) .hm-passbook{display:none}
+  html[data-section] .hm-hero,html[data-section] .hm-teasers,html[data-section] .hm-foot{display:none}
+  html[data-section="journey"] .hm-passbook,html[data-section="passbook"] .hm-journey{display:none}
+
+  /* Hero: one calm stack. The rosette stays behind it, dimmed and still. */
+  .hm-hero{--hero-full:auto}
+  .hm-hero-in{height:auto;display:flex;flex-direction:column;gap:0;padding:14px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px))}
   .hm-l,.hm-r{display:contents}
-  .hm-eyebrow{order:1;margin-bottom:12px}
-  .hm-h1{order:2;font-size:min(calc((100vw - 32px)/8.5),64px);line-height:1.04;letter-spacing:-.032em;margin-bottom:18px}
-  [data-mode="back"] .hm-h1,[data-mode="done"] .hm-h1{font-size:min(calc((100vw - 32px)/11.6),48px);margin-bottom:6px}
+  .hm-weave,.hm-mr-host{display:none}
+  .hm-gl{--cx:96%;--cy:30%;opacity:.3;-webkit-mask-image:linear-gradient(180deg,#000 0,rgba(0,0,0,.4) 60%,transparent 100%);mask-image:linear-gradient(180deg,#000 0,rgba(0,0,0,.4) 60%,transparent 100%)}
+  .hm-eyebrow{order:1;gap:8px;font-size:15px;line-height:1.3;margin-bottom:8px;align-items:flex-start}
+  .hm-eyebrow svg{width:17px;height:17px;margin-top:1px}
+  .hm-h1,[data-mode="back"] .hm-h1,[data-mode="done"] .hm-h1{order:2;font-size:min(8.3vw,44px);line-height:1.08;font-stretch:112%;letter-spacing:-.024em;margin-bottom:12px}
+  .hm-hero[data-mode="new"] .hm-h1 span:nth-child(-n+2){display:inline}
+  .hm-hero[data-mode="new"] .hm-who{order:2}
+
   .hm-hero[data-mode="new"] .hm-mc{order:3}
-  .hm-hero[data-mode="new"] .hm-feed{order:4;flex:none}
-  .hm-hero[data-mode="new"] .hm-cta{order:5;margin:34px 0 18px}
-  .hm-hero[data-mode="new"] .hm-acct-host{order:6}
-  .hm-hero:not([data-mode="new"]) .hm-cta{order:3;margin:10px 0 18px}
-  .hm-hero:not([data-mode="new"]) .hm-mr-host{order:4}
-  .hm-hero:not([data-mode="new"]) .hm-acct-host{order:5;margin-bottom:26px}
-  .hm-hero:not([data-mode="new"]) .hm-mc{order:6}
-  .hm-hero:not([data-mode="new"]) .hm-feed{order:7;flex:none}
-  .hm-feed{margin-bottom:0;padding-bottom:0;overflow:clip;overflow-clip-margin:30px}
-  .hm-feed .ledger{--lg-max:230px}
-  .hm-gl{--cx:92%;--cy:70%;opacity:.8;-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.1) 0,rgba(0,0,0,.18) 34%,#000 60%);mask-image:linear-gradient(180deg,rgba(0,0,0,.1) 0,rgba(0,0,0,.18) 34%,#000 60%)}
-  .hm-slip{width:100%}
-  .hm-sec{padding-top:40px;padding-bottom:26px}
-  .hm-sec-head{grid-template-columns:minmax(0,1fr)}
-  .hm-sec-head p{justify-self:start}
+  .hm-hero[data-mode="new"] .hm-feed{order:4}
+  .hm-hero[data-mode="new"] .hm-cta{order:5;margin:14px 0 2px}
+  .hm-hero[data-mode="new"] .hm-acct-host{display:none}
+  /* Returning: Continue comes first, then where you stand. */
+  .hm-hero:not([data-mode="new"]) .hm-eyebrow{display:none}
+  .hm-hero:not([data-mode="new"]) .hm-h1{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .hm-hero:not([data-mode="new"]) .hm-cta{order:1;margin:2px 0 12px}
+  .hm-hero:not([data-mode="new"]) .hm-acct-host{order:2;margin:0 0 14px}
+  .hm-hero:not([data-mode="new"]) .hm-mc{order:3}
+  .hm-hero:not([data-mode="new"]) .hm-feed{order:4}
+
+  .hm-slip{width:100%;min-height:64px}
+  .hm-slip:hover{translate:none}
+  .hm-slip-t b{font-size:17px}
+  .hm-slip-t small{font-size:14.5px}
+  .hm-slip-no{padding:0 12px}
+  .hm-slip-t{padding:8px 12px}
+  .hm-slip-a{padding-right:12px}
+
+  /* Live query: a full-width Run in thumb reach */
+  .hm-mc .mc-bar{min-height:34px;padding:3px 12px}
+  .hm-mc .mc-note{font-size:13.5px;overflow:hidden;text-overflow:ellipsis}
+  .hm-mc .mc-act{flex-wrap:wrap;gap:6px 10px;min-height:0;padding:6px 12px 10px}
+  .hm-mc .mc-act .sp{display:none}
+  .hm-tr{flex:1 1 100%;font-size:15px}
+  .hm-over{flex:none;min-height:44px}
+  .hm-mc .hm-run{flex:1 1 0;min-height:50px;font-size:17px}
+  .hm-mc .hm-run .kbd{display:none}
+  .hm-run.canary::after{display:none}
+  .hm-mc .slot{height:9px}
+  .hm-mc .slot::after{top:4px}
+
+  .hm-feed{flex:none;margin:-3px 0 0;padding:3px 8px 0;overflow:clip;overflow-clip-margin:30px}
+  .hm-feed .ledger{--lg-max:196px}
+  .hm-feed .lg{font-size:14px}
+  .hm-tongue{min-height:40px;padding:4px 14px 2px;font-size:15px;gap:9px}
+  .hm-tongue svg{width:14px;height:14px}
+  .hm-band{padding:8px 12px;font-size:15px}
+  .hm-band .vband-title{font-size:16.5px}
+
+  /* Where you stand: a compact row, printed as ledger marks */
+  .hm-acct{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr);gap:0 10px;border-top:0;border-bottom:1px solid var(--hair);padding-bottom:10px}
+  .hm-acct>div,.hm-acct>div:last-child{padding:0;margin:0;border:0}
+  .hm-acct dt{font-size:14px;margin-bottom:5px}
+  .hm-acct dd{white-space:normal;font-size:14.5px;flex-wrap:wrap;gap:4px 6px;min-height:0}
+  .hm-acct dd b{font-size:16.5px}
+  .hm-acct dd.hm-rank{gap:4px}
+  .hm-rank-next{font-size:14px;gap:4px}
+  .hm-bar{min-width:0}
+  .hm-of{font-size:14px;color:var(--text-3)}
+  .hm-acct>.hm-acct-due{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)}
+  .hm-acct>.hm-acct-due.is-zero{display:none}
+  .hm-acct-due dt{margin:0}
+  .hm-acct-due dd{flex-wrap:nowrap;flex:1;justify-content:space-between}
+  .hm-acct-due .plain{font-size:16px}
+
+  /* Teasers */
+  .hm-teasers{display:grid;gap:12px;padding:6px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+  .hm-tz{display:flex;flex-direction:column;gap:6px;min-width:0;padding:12px 14px;border-radius:4px;text-decoration:none;color:inherit;-webkit-tap-highlight-color:transparent}
+  .hm-tz:active{translate:0 1px}
+  .hm-tz-j{background:var(--ground-2);box-shadow:inset 0 0 0 1px var(--hair)}
+  .hm-tz-p{color:var(--paper-ink)}
+  .hm-tz-h{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:28px}
+  .hm-tz-h b{font:600 18px/1.2 var(--f-display);font-stretch:106%;letter-spacing:-.01em}
+  .hm-tz-go svg{width:18px;height:18px;opacity:.7}
+  .hm-tz-s{font-size:15.5px;line-height:1.35;color:var(--text-2)}
+  .hm-tz-p .hm-tz-s{color:var(--paper-ink-2)}
+  .hm-tz .mr{height:88px;max-width:none}
+  .hm-tz-lines{display:flex;flex-direction:column;border-top:1.5px solid var(--paper-ink)}
+  .hm-tz-l{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:0 10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--paper-rule);font-size:15px;line-height:1.25}
+  .hm-tz-d,.hm-tz-b{font:400 14px/1.25 var(--f-mono);color:var(--paper-ink-2)}
+  .hm-tz-b{font-weight:600;color:var(--paper-ink)}
+  .hm-tz-t{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .hm-tz-t b{font:600 14px/1.25 var(--f-mono)}
+  .hm-tz-eoe{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 13px/1.3 var(--f-mono);color:var(--paper-ink-2)}
+  .hm-tz-saldo{font-size:15px;font-weight:600;color:var(--paper-ink);border-bottom:3px double var(--paper-ink);padding-bottom:1px}
+
+  /* Section screens */
+  .hm-sec{padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));scroll-margin-top:0}
+  .hm-sec-head{grid-template-columns:minmax(0,1fr);gap:4px;margin-bottom:14px}
+  .hm-sec-head h2{font-size:28px;font-stretch:112%}
+  .hm-sec-head p{justify-self:start;font-size:16px;line-height:1.42}
+  .hm-foot{margin-top:8px;padding-top:14px;font-size:15px}
+  .hm-foot .weave{display:none}
+
+  /* Journey: the route, then levels as tappable rows */
+  .hm-stn.here .hm-medal::before{animation:none;opacity:.6}
+  .hm-route{margin-bottom:8px}
+  .hm-jl-row a{grid-template-columns:56px minmax(0,1fr) 16px;gap:12px;padding:12px 0;min-height:72px;align-items:center}
+  .hm-jl-row a::after{content:"";justify-self:end;width:8px;height:8px;margin-right:3px;border-top:1.6px solid var(--text-3);border-right:1.6px solid var(--text-3);rotate:45deg}
+  .hm-jl-b{gap:2px}
+  .hm-jl-top{font-size:14px}
+  .hm-jl-title{font-size:18px}
+  .hm-jl-rank{font-size:15px}
+  .hm-jl-tag,.hm-pips{display:none}
+  .hm-jl-prog{margin-top:5px;font-size:13.5px}
+  .hm-jl-bar{display:block;flex:1 1 auto;width:auto}
+  .hm-jl-row.here .hm-jl-bar i{background:var(--text)}
+  .hm-here.inline{margin-bottom:4px}
+  .hm-tear{margin:6px 0;padding:12px 0;font-size:16px}
+
+  /* Passbook: real lines, one column, no underprint behind the text */
+  .hm-sec.hm-passbook{padding-inline:max(10px,env(safe-area-inset-left,0px)) max(10px,env(safe-area-inset-right,0px))}
+  .hm-passbook .hm-sec-head{padding-inline:6px}
   .hm-book{grid-template-columns:minmax(0,1fr)}
-  .hm-leaf{padding:9px 9px 0;border-radius:7px 7px 0 0}
-  .hm-bk-r{padding:0 9px 17px;border-radius:0 0 7px 7px}
-  .hm-leaf::after,.hm-cover,.hm-gutter{display:none}
-  .hm-bk-r::after{left:9px;right:9px;bottom:8px}
+  .hm-leaf{padding:7px 7px 0;border-radius:7px 7px 0 0}
+  .hm-bk-r{padding:0 7px 15px;border-radius:0 0 7px 7px}
+  .hm-leaf::after,.hm-cover,.hm-gutter,.hm-under{display:none}
+  .hm-bk-r::after{left:7px;right:7px;bottom:6px}
   .hm-pg-l,.hm-pg-r{box-shadow:none}
   .hm-pg-r{border-top:1px dashed var(--paper-rule-2)}
-  .hm-pg{min-height:0}
+  .hm-pg{min-height:0;padding:14px 12px 12px}
+  .hm-pg-head{padding-bottom:9px}
+  .hm-pb{font-size:14.5px}
+  .hm-pb th{padding:6px 5px 5px;height:auto}
+  .hm-pb td{height:auto;padding:8px 5px}
+  .hm-pb td.t{font:400 15.5px/1.28 var(--f-body)}
+  .hm-pb td.t b{font:600 14.5px/1.28 var(--f-mono);margin-right:2px}
+  .hm-pb tr.note td.t{font:600 15px/1.25 var(--f-body)}
+  .hm-pb tr.bf td.t{font:500 14px/1.2 var(--f-mono)}
+  .hm-pb tr.blank td{height:30px;padding:0}
+  .hm-pb tr.blank~tr.blank~tr.blank~tr.blank{display:none}
+  .hm-pb-eoe{font-size:13px}
+  .hm-pb-pager .tlink{min-height:44px;font-size:15px}
+  .hm-micro{margin-top:6px}
+  .hm-slots{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 6px}
+  .hm-slot{padding:4px 0 2px}
+  .hm-slot-g{width:min(100%,104px)}
+  .hm-slot-cap{font-size:14px;min-height:0}
+  .hm-slot.goal{grid-column:1/-1;padding-top:8px;border-top:1px solid var(--paper-rule)}
+  .hm-slot.goal .hm-slot-g{width:88px}
+  .hm-slot.goal .hm-slot-cap{font-size:15.5px}
+  .hm-closing-mid{grid-template-columns:minmax(0,1fr)}
+  .hm-closing-st{max-width:190px}
+  .hm-name{font-size:24px}
+  .hm-closing-act .tlink{min-height:44px;font-size:15.5px}
+
+  /* Rank-up: paper on the desk that fits one screen, with the button under the thumb */
+  dialog.rk{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:none;margin:8px auto}
+  .rk-sheet{display:flex;flex-direction:column;align-items:stretch;gap:6px;height:100%;max-height:none;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px))}
+  .rk-seal{flex:none;order:-1;width:min(56vw,29dvh);max-width:280px;justify-self:auto;align-self:center;margin:0}
+  /* The violet flash stays with the stamp, so it never washes over the words. */
+  .rk-sheet .uvflare{-webkit-mask-image:linear-gradient(180deg,#000 0,#000 22%,transparent 36%);mask-image:linear-gradient(180deg,#000 0,#000 22%,transparent 36%)}
+  .rk-copy{flex:1 1 auto;min-height:0}
+  .rk-label{font-size:14px}
+  .rk-rank{font-size:clamp(30px,9.2vw,48px);margin-top:4px}
+  .rk-rank small{font-size:15px;margin-bottom:3px}
+  .rk-can{margin-top:8px;font-size:17px;line-height:1.38}
+  .rk-held{font-size:15px}
+  .rk .mr{margin-top:6px;max-width:none}
+  .rk-foot{margin-top:4px;font-size:15px}
+  .rk-act{order:9;margin-top:auto;padding-top:10px}
+  .rk-go{width:100%;min-height:64px}
+  .rk-go:active{translate:0 1px}
+}
+@media (min-width:601px) and (max-width:999px){
+  .hm-teasers{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .hm-acct{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
 }
 @media (max-width:760px){
   .hm-jl-g{grid-template-columns:minmax(0,1fr)}
   .hm-jl-g+.hm-tear+.hm-jl-g .hm-jl-row:nth-child(2){border-top:1px solid var(--hair)}
-  .hm-acct{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
-  .hm-acct>div{padding:10px 0 12px;margin-right:0;border-right:0;border-bottom:1px solid var(--hair)}
-  .hm-acct>div:nth-last-child(-n+2){border-bottom:0}
-  .hm-bar{min-width:0}
-  .hm-rank-next{white-space:normal}
-  .hm-acct dd{white-space:normal}
-  .hm-pb{font-size:14px}
-  .hm-pb td,.hm-pb th{padding-left:4px;padding-right:4px}
   .hm-pb .cr{display:none}
-  .hm-pb td{height:auto;min-height:36px;padding-top:7px;padding-bottom:7px}
-  .hm-pb tr.blank td{height:30px;padding:0}
   .hm-d-dm{display:none}
-  .hm-d-mono{display:inline}
+  .hm-d-mono{display:inline;font-size:14px}
   .hm-pg-acct{display:none}
-  .hm-pg{padding:18px 14px 14px}
-  .hm-slot-cap{font-size:13.5px}
-  .hm-slots{gap:2px 3px}
-  .hm-closing-mid{grid-template-columns:minmax(0,1fr)}
-  .hm-closing-st{max-width:190px}
-  .rk-sheet{grid-template-columns:minmax(0,1fr);gap:8px;padding:16px 16px 14px}
-  .rk-seal{order:-1;width:min(46vw,28dvh);max-width:190px;justify-self:start;margin:-2px 0 0}
-  .rk-rank{font-size:clamp(30px,9.4vw,44px);margin-top:4px}
-  .rk-go{width:100%}
-  .hm-jl-row a{padding:14px 0 16px}
-  .hm-jl-title{font-size:19px}
 }
-@media (max-width:420px){
-  .hm-mc .mc-act{flex-wrap:wrap}
-  .hm-tr{flex:1 1 100%;font-size:14.5px}
-  .hm-mc .hm-run{min-height:48px;flex:1}
-  .hm-tongue{padding:6px 14px 0;font-size:15px}
-  .hm-band{padding:8px 10px;font-size:14.5px}
-  .hm-band .vband-title{font-size:16px}
+/* A tablet has the room to show the rank-up as a sheet of paper, not a whole wall of it. */
+@media (min-width:600px) and (max-width:999px) and (min-height:701px){
+  dialog.rk{width:min(640px,calc(100vw - 48px));height:auto;margin:auto}
+  .rk-sheet{height:auto;max-height:calc(100dvh - 48px);padding:20px 28px}
+  .rk-act{margin-top:14px}
+  .rk-seal{width:min(44vw,300px)}
+}
+/* A short phone: the rank-up drops its route, so the button stays on screen. */
+@media (max-width:999px) and (max-height:700px){
+  .rk .mr{display:none}
+  .rk-seal{width:min(50vw,27dvh)}
+}
+/* On its side, the small print goes and the rank and stamp shrink, so Share and the main key both fit. */
+@media (max-width:999px) and (max-height:449px){
+  .rk-foot{display:none}
+  .rk-rank{font-size:36px}
+  .rk-seal{width:min(50vw,20dvh)}
 }
 @media (prefers-reduced-motion:reduce){
   .hm-slip,.hm-slip-a svg,.hm-medal,.hm-jl-medal,.hm-medal svg.ros{transition:none}
@@ -398,7 +539,7 @@ dialog.rk::backdrop{background:var(--overlay)}
 
 /* ---------- Print: the completed passbook ---------- */
 @media print{
-  .top,.hm-hero,.hm-journey,.hm-foot,.hm-noprint,.hm-micro{display:none!important}
+  .top,.tabbar,.hm-hero,.hm-teasers,.hm-journey,.hm-foot,.hm-noprint,.hm-micro{display:none!important}
   html,body,#view{background:var(--paper)!important;display:block}
   .hm-sec{padding:0}
   .hm-book::before{display:none}

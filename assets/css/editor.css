@@ -241,6 +241,9 @@
   touch-action:pan-x;
 }
 .ed-keys::-webkit-scrollbar{display:none}
+/* Two short rows that scroll together: words on top, symbols below */
+.ed-keys.ed-keys-2{display:block}
+.ed-krow{display:flex;gap:6px;width:max-content;padding:2px 0}
 .ed-key{
   flex:none;
   min-width:44px;
@@ -263,10 +266,28 @@
 /* Room to scroll the editor clear of the key bar and the keyboard, even when it is the last thing on the page */
 html[data-keybar="up"] body{padding-bottom:calc(var(--keybar-h,0px) + var(--kb-inset,0px) + var(--ed-bar-lift,0px))}
 
+/* Run rides with the key bar when a screen asks for it (runKey), because the keyboard covers the bottom bar. */
+.ed-keyrow{display:flex;align-items:center}
+.ed-keyrow .ed-keys{flex:1 1 0;min-width:0}
+.ed-key.ed-key-run{flex:none;min-width:76px;height:44px;margin:5px max(8px,env(safe-area-inset-right,0px)) 5px 0;padding:0 16px;background:var(--canary);color:var(--canary-ink);box-shadow:inset 0 0 0 1px var(--canary-line),0 2px 0 var(--canary-lo);font:600 16px/1 var(--f-body)}
+.ed-key.ed-key-run:active{background:var(--canary-hi);box-shadow:inset 0 0 0 1px var(--canary-line)}
+
 /* Touch devices get 16px text, because iOS zooms the page on anything smaller */
 @media (pointer:coarse),(max-width:999px){
   .ed{--ed-font:16px;--ed-lh:27px;--ed-pad-x:10px}
   .ed-g{padding-right:7px;padding-left:5px;min-width:calc(var(--ed-digits,2)*1ch + 12px)}
+}
+
+/* Below 1000px long lines soft-wrap, so nobody scrolls sideways. Both layers keep the same width and the same rules. */
+@media (max-width:999px){
+  .ed-scroll{overflow-x:hidden}
+  .ed-g{display:none}
+  .ed-grid{width:100%;min-height:100%}
+  .ed-code{flex:1 1 0;min-width:0}
+  .ed-hl,.ed-ta{white-space:pre-wrap;overflow-wrap:anywhere;padding-right:var(--ed-pad-x)}
+  .ed::before{display:none}
+  /* No continuous animation on a phone: the selected blank keeps its ring and stays still. */
+  .ed-hl .t-blank.on{animation:none}
 }
 
 /* Windows high contrast drops backgrounds, so blanks and the marked word get real outlines */

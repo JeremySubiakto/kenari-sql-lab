@@ -1331,6 +1331,7 @@ ORDER BY bk.snapshot_month;`,
       },
       {
         id: '9.18',
+        phone: [[`in the table above`, `in the table in the Brief`]],
         exam: true,
         title: 'Exam: system test pack',
         newIdea: 'No new SQL here. This exam proves in one query whether a new system version is fit to go live.',

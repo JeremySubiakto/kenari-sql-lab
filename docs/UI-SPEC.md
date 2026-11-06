@@ -51,7 +51,7 @@ The main screen. Two panes on wide screens, with instructions beside the editor 
 - **Tables you need:** only the tables this mission's solution uses, with each column's meaning. Click a column to insert it. A "Peek at this table" button shows 5 rows. "All tables" opens the full reference with how tables connect.
 - Editor (below), Run button, Hint button.
 - Hints reveal one at a time. After the last hint, "Show the answer" appears, with "Put it in the editor". Exams: no hints. After clearing an exam, show the model answer.
-- Verdict, then result, then "Copy for Claude".
+- Verdict, then result, then "Copy for AI".
 
 **Verdict states:**
 - *Blanks left:* "Fill in the blanks first", and jump to the first blank.
@@ -77,7 +77,7 @@ Free practice on a persistent private copy of the data, so temp tables and updat
 - Full table reference beside it.
 - Query history (last 30, click to reload), and named saved queries.
 - Copy results as tab-separated text to paste into Excel.
-- "Copy for Claude": see below.
+- "Copy for AI": see below.
 - A note: queries run only in this browser. Before pasting anything from work anywhere, check the company's rules and remove customer data.
 
 ### Cheat sheet (`#/cheatsheet`)
@@ -100,13 +100,13 @@ Custom, no library: a transparent `<textarea>` over a highlighted `<pre>`, in a 
 - Ctrl/Cmd+Enter runs. Tab inserts two spaces when there is no blank or popup. Esc leaves the editor, so keyboard users are not trapped.
 - Error marking: after an error, highlight the token from `explainError` until the next edit.
 - Grows with content between about 6 and 24 lines.
-- **Phone:** a key bar of common tokens (`SELECT FROM WHERE * , ' = ( ) ; AND GROUP BY ORDER BY`) above or under the editor on touch devices. 16px text so iOS does not zoom. Keep Run in easy reach with a sticky bar. A "Jump to the editor" control on the mission screen.
+- **Phone:** a key bar of common tokens in two short rows that scroll together, words on top (`SELECT FROM WHERE AND GROUP BY ORDER BY`) and symbols below (`* , ' = ( ) ;`), above the keyboard on touch devices. The mission editor uses 14px code. On iOS the page adds `maximum-scale=1`, so a field under 16px does not zoom the page, and pinch zoom still works. Keep Run in easy reach with a sticky bar. A "Jump to the editor" control on the mission screen.
 
 ## Results
 
 Results print like a passbook or ledger: ruled lines, a row-number column in a dot-matrix face, numbers right-aligned with tabular figures, sticky headers, scrolling in its own box. Show `NULL` as a distinct muted marker. Display integers of 100,000 or more with thin-space grouping (except `_id` columns), with the raw value in the title attribute. Show the first 200 rows and say how many there are. A brief print-in animation on the first 20 rows, off for reduced motion. Copy-as-TSV button.
 
-## Copy for Claude
+## Copy for AI
 
 There is no built-in AI, because a public page cannot hold an API key. Instead, one button copies a ready-made prompt to the clipboard: the mission, the table list, the learner's query, what happened, and an instruction to tutor without giving away the answer. A link opens claude.ai in a new tab. Show a toast saying what was copied. In Scratchpad the prompt says to explain the query line by line and warns the learner to remove sensitive data first. Never put the learner's text in a URL.
 

@@ -1,6 +1,6 @@
-/* The mission screen, owned by the mission agent. Review reuses it. See docs/DESIGN.md.
+/* The mission screen, owned by the mission agent. Review reuses it. See docs/DESIGN.md and docs/PHONE.md.
    Sections: frame, left pane, example, bridge, right pane, ticket, tables, quiz, order,
-   console, hints, paper and verdict, help slip, phone. */
+   console, hints, paper and verdict, help slip, phone (everything below 1000px wide lives there). */
 
 /* ---------- Frame ---------- */
 @media (min-width:1000px){
@@ -15,7 +15,6 @@
 .ms-learn>.gl{--cx:100%;--cy:0;position:absolute;left:0;right:0;top:0;height:420px;z-index:0;opacity:.72;-webkit-mask-image:radial-gradient(circle 360px at 100% 0,#000 20%,transparent 100%);mask-image:radial-gradient(circle 360px at 100% 0,#000 20%,transparent 100%)}
 .ms-learn-in{position:relative;z-index:1;max-width:660px;margin:0 auto;padding:16px clamp(18px,2.6vw,40px) 56px}
 
-.ms-posbar{display:none}
 .ms-where{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;font-size:14.5px;line-height:1.3;color:var(--text-2)}
 .ms-where-t{min-width:0;display:flex;flex-direction:column;gap:2px}
 .ms-lv{text-decoration:none;border-radius:2px}
@@ -208,7 +207,6 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
 .ms-status{white-space:normal!important;line-height:1.2}
 .ms-note{white-space:nowrap}
 .ms-note .plain{min-height:0;font-size:14px}
-.ms-bar .ms-over2{display:none;white-space:nowrap;flex:none}
 .ms-edbox{--ed-max-h:var(--ed-cap);background:var(--mc)}
 .ms-edhost{min-height:100%}
 .ms-under{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:15px;line-height:1.3;color:var(--mc-text);background:var(--mc-2);border-top:1px solid var(--mc-hair)}
@@ -218,7 +216,6 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
 .ms-keys .key:not(.canary):hover{background:var(--mc-hair)}
 .ms-keys .ghost{min-height:44px}
 .ms-keys .sp{flex:1 1 0;min-width:0}
-.ms-jump{display:none}
 .ms-enter{font-size:14px;color:var(--mc-text-2);white-space:nowrap;flex:none}
 .ms-run{flex:0 1 auto;min-width:112px;max-width:100%;overflow:hidden}
 .ms-run-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -250,6 +247,7 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
 .ms-answer{padding-top:6px;border-top:1px dashed var(--mc-hair);display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .ms-answer .codeblock{width:100%;background:var(--mc)}
 .ms-toast{display:inline-flex;align-items:center;gap:12px}
+.ms-qnext{display:none}
 
 /* ---------- Paper: rises out of the console, over the upper area ---------- */
 .ms-tray{position:absolute;left:0;right:0;bottom:0;top:0;z-index:4;width:100%;max-width:calc(var(--do-w) + 2*var(--g));margin:0 auto;padding:0 var(--g);display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;transition:translate .22s cubic-bezier(.3,.7,.3,1)}
@@ -272,7 +270,6 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
 .ms-pin-text .rich{display:inline}
 .ms-pin-text code{font-size:13px;padding:0 .2em;background:var(--paper-code-bg);color:var(--paper-ink)}
 .ms-pin .tlink{flex:none;font-size:13.5px;min-height:26px;font-weight:500;white-space:nowrap}
-.ms-short{display:none}
 .ms-pin.open{align-items:flex-start}
 .ms-pin.open .ms-pin-text{white-space:normal;max-height:92px;overflow:auto}
 .ms-pin-full{flex:1 1 0;min-width:0;max-height:min(40vh,180px);overflow:auto;scrollbar-width:thin;scrollbar-color:var(--paper-rule-2) transparent}
@@ -374,130 +371,374 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
   .ms-enter{display:none}
 }
 
-/* ---------- Phone and tablet: one column ---------- */
+/* ---------- Phone and tablet: an app, not a page. See docs/PHONE.md ---------- */
+/* These parts exist at every size and only show below 1000px. */
+.ms-mbar,.ms-segs,.ms-chips,.ms-req1,.ms-try,.ms-edit,.ms-ex-t,.ms-copy-w{display:none}
+
 @media (max-width:999px){
-  /* Anything scrolled into view, such as a demo's control or keyboard focus, stops above the bottom bar. */
-  html[data-route="mission"],html[data-route="review"]{scroll-padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
-  .ms{display:block;height:auto;--g:16px;padding-bottom:calc(var(--bar-h,64px) + env(safe-area-inset-bottom,0px) + 10px)}
-  .ms-learn{overflow:visible}
-  .ms-learn>.gl{display:none}
-  .ms-learn-in{max-width:none;padding:0 var(--g) 18px}
-  .ms-do{border-left:0;border-top:1px solid var(--hair);padding-top:14px}
-  .ms-stage{overflow:visible;flex:none}
-  .ms-upper{position:static;overflow:visible;container:do / inline-size}
-  .ms-upper-in{padding:0 var(--g) 14px;max-width:none;gap:12px}
-  .is-review .ms-do{border-top:0}
+  /* The page never scrolls. Only the content inside a step does. */
+  html[data-route="mission"],html[data-route="review"][data-reviewing]{overscroll-behavior:none}
+  html[data-route="mission"] body,html[data-route="review"][data-reviewing] body{height:var(--vvh,100dvh);min-height:0;overflow:hidden}
+  html[data-route="mission"][data-keybar="up"] body,html[data-route="review"][data-reviewing][data-keybar="up"] body{padding-bottom:0}
+  html[data-route="mission"] #view,html[data-route="review"][data-reviewing] #view{flex:1 1 auto;min-height:0;overflow:hidden}
+  html[data-route="mission"] #top{display:none}
+  html[data-route="review"][data-reviewing] .tabbar{display:none}
 
-  /* Position bar */
-  .ms-where,.ms-dots{display:none}
-  .ms-posbar{display:flex;align-items:center;gap:2px;margin:0 calc(var(--g)*-1 + 4px) 0 calc(var(--g)*-1);padding:2px 4px 2px var(--g);border-bottom:1px solid var(--hair);min-height:50px}
-  .ms-pos{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:44px;text-align:left;font-size:15px;line-height:1.1;color:var(--text-2);border-radius:3px}
-  .ms-pos-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ms-pos b{font-weight:600;color:var(--text)}
-  .ms-pos-bar{position:relative;display:block;height:3px;margin-right:12px;background:var(--hair);border-radius:2px;overflow:hidden}
-  .ms-pos-bar::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,0%);background:var(--text-2)}
-  .ms-posbar .ms-nav-a{min-width:58px;height:44px;justify-content:center;box-shadow:none;padding:0 6px}
-  .ms-posbar .ms-navgap{display:block;min-width:58px}
-  .ms-head{margin-top:12px;align-items:center}
-  .ms-head h1{font-size:clamp(22px,6.2vw,28px);font-stretch:110%}
-  .ms-idea{margin-top:12px}
-  .ms-idea .rich{font-size:18px}
-  .ms-teach{font-size:16.5px}
+  .ms{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;flex:1 1 auto;height:auto;min-height:0;overflow:hidden;--g:16px;background:var(--ground)}
+  .ms.is-review{grid-template-columns:minmax(0,1fr)}
 
-  .ms-ticket .tk-avatar{width:30px;height:30px}
-  .ms-stub-t{min-height:44px}
-  .ms-tables-t{min-height:44px;flex:1 1 auto;font-size:16px}
-  .ms-tables-h .plain{min-height:44px}
-  .ms-tables-h small{order:3;flex:1 0 100%;margin-top:-4px;margin-bottom:6px}
-  .cols{grid-template-columns:minmax(0,1fr)}
-  .col{display:flex;align-items:center;flex-wrap:wrap;gap:0 8px;min-height:44px;padding:6px 10px;line-height:1.3;font-size:14.5px}
-  .col code{font-size:15px;margin-right:0}
-  .ms-peekb{height:44px}
-  .tbl-n{min-height:52px}
-  .ms-choice-b{min-height:60px;padding:12px 14px}
-  .ms-line,.ms-line-empty{min-height:44px}
-  .ms-tile{min-height:50px}
+  /* ----- Mission bar ----- */
+  .ms-mbar{display:block;grid-row:1;padding-top:env(safe-area-inset-top,0px);background:var(--ground)}
+  .is-review .ms-mbar{display:none}
+  .ms-mbar-row{display:flex;align-items:center;height:47px;padding:0 max(2px,env(safe-area-inset-right,0px)) 0 max(2px,env(safe-area-inset-left,0px))}
+  .ms-back{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--text);border-radius:4px}
+  .ms-back svg{width:18px;height:18px}
+  .ms-mhead{flex:1 1 0;min-width:0;font:inherit;letter-spacing:0}
+  .ms-mtitle{display:flex;align-items:center;gap:7px;width:100%;min-height:44px;text-align:left;color:var(--text);border-radius:4px}
+  .ms-mid{flex:none;font:500 14px/1 var(--f-mono);color:var(--text-2)}
+  .ms-mname{flex:0 1 auto;min-width:0;font:600 16px/1.2 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ms-mdown{flex:none;display:grid;place-items:center;color:var(--text-3)}
+  .ms-mdown svg{width:10px;height:10px}
+  .ms-saldo{flex:none;display:flex;align-items:baseline;gap:5px;min-height:44px;padding:14px 12px 0 10px;text-decoration:none;color:var(--text-2);line-height:1;overflow:hidden}
+  .ms-saldo small{font-size:13px}
+  .ms-saldo b{display:inline-block;font:600 15px/1 var(--f-mono);color:var(--text)}
+  .ms-mprog{position:relative;display:block;height:2px;background:var(--hair)}
+  .ms-mprog::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,0%);background:var(--text-2)}
 
-  /* Paper prints directly above the console */
-  .ms-tray,.ms-tray.has-slip{position:relative;top:auto;bottom:auto;padding:0 var(--g);margin:0 auto 7px;max-width:none;display:block;transition:none}
-  .ms-tray.has-slip{margin-bottom:12px}
-  .ms-tray.lowered{translate:none}
-  .ms-tray.lowered>*{height:auto!important;max-height:none}
-  .ms-tray.lowered .ms-pin~*{display:none}
-  .ms-sheet{height:var(--paper-h,360px);max-height:none}
-  .ms-sheet:not(:has(.ledger)){height:auto;max-height:var(--paper-h,360px)}
-  .ms-slip{max-height:var(--paper-h,360px)}
-  .ms-band-t{max-height:max(70px,calc(var(--stage-h) - 214px))}
-  .ms-sheet .validation{width:88px;min-height:68px}
-  .ms-sheet .lg-foot{min-height:44px}
-  .ms-sheet .tlink,.ms-slip .tlink{min-height:44px}
-  .ms-pin{gap:8px;padding:2px 10px}
-  .ms-pin .tlink{min-height:44px}
-  .ms-sheet .lg-foot{row-gap:0;column-gap:8px;padding:0 10px;min-height:44px}
-  .ms-sheet .lg-count{flex:1 1 0;font-size:13px;line-height:1.2;min-width:0}
-  .ms-sheet .lg-foot:not(:has(.ms-cmp)){flex-wrap:nowrap}
-  .ms-sheet .lg-foot>.sp{display:none}
-  .ms-sheet .lg-foot .tlink{flex:none;font-size:13.5px}
-  .ms-sheet .lg-foot .ms-cmp{flex:none;order:0}
-  .ms-sheet .lg-foot:has(.ms-cmp) .tlink{flex:1 1 40%;justify-content:center}
-  .ms-sheet .lg-foot:has(.ms-cmp) .lg-count{flex:1 1 40%}
-  .ms-sheet .lg-foot .ms-cmp button{padding:0 8px;font-size:13px}
-  .ms-meta .tlink{min-height:32px}
-  .ms-cmp button{height:44px}
+  /* ----- Step tabs ----- */
+  .ms-segs{display:grid;grid-row:2;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:var(--ground);border-bottom:1px solid var(--hair)}
+  .ms-seg{position:relative;min-height:44px;font:500 15.5px/1 var(--f-body);color:var(--text-2)}
+  .ms-seg[aria-selected="true"]{color:var(--text);font-weight:600}
+  .ms-seg[aria-selected="true"]::after{content:"";position:absolute;left:18px;right:18px;bottom:-1px;height:3px;background:var(--text);border-radius:2px 2px 0 0}
+  .ms-seg:disabled{color:var(--text-3);opacity:.55;cursor:default}
+  .ms-seg:focus-visible{outline-offset:-3px}
+
+  /* ----- Which step shows ----- */
+  .ms-learn,.ms-do{grid-row:3;min-height:0}
+  .ms[data-step="learn"] .ms-do{display:none}
+  .ms:not([data-step="learn"]) .ms-learn{display:none}
+  .ms-learn:focus,.ms-do:focus{outline:none}
+
+  /* ----- Learn: reading order, calm, no boxes in boxes ----- */
+  .ms-learn{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .ms-learn>.gl,.ms-where,.ms-dots,.ms-head,.ms-idea .weave{display:none}
+  .ms-learn-in{max-width:680px;padding:20px var(--g) 28px}
+  .ms-head:has(.ms-tag){display:block;margin:0 0 10px}
+  .ms-head:has(.ms-tag) .ms-plate,.ms-head:has(.ms-tag) h1{display:none}
+  .ms-idea{margin:0}
+  .ms-idea-b{padding:0}
+  .ms-idea-l{font-size:14px;color:var(--text-2)}
+  .ms-idea .rich{margin-top:6px;font-size:23px;line-height:1.28;font-stretch:102%}
+  .ms-teach{margin-top:20px;font-size:17px;line-height:1.62}
+  .ms-teach .rich>p+p{margin-top:14px}
+  .ms-ex{margin-top:26px}
+  .ms-sub{font-size:16px;margin-bottom:10px}
+  .ms-ex-mc{margin:0 calc(var(--g)*-1);border-radius:0;box-shadow:none}
+  .ms-ex-lines{padding:4px 0 6px}
+  .ms-ex-line{padding:8px var(--g)}
+  .ms-ex-mc code.ms-ex-sql{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:22px}
+  .ms-ex-en{font-size:16px;line-height:1.42;margin-top:3px}
+  .ms-ex-t{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;margin-top:6px;font:600 15.5px/1.2 var(--f-body);color:var(--text);text-align:left}
+  .ms-ex-t[hidden]{display:none}
+  .ms-ex-tn{font:500 13.5px/1 var(--f-mono);color:var(--text-2)}
+  .ms-ex-ti{margin-left:auto;display:grid;place-items:center;color:var(--text-3);transition:rotate .16s}
+  .ms-ex-ti svg{width:11px;height:11px}
+  .ms-ex-t[aria-expanded="true"] .ms-ex-ti{rotate:180deg}
+  .ms-ex-feed{display:none;margin:0 calc(var(--g)*-1)}
+  .ms-ex-feed.open{display:block}
+  .ms-ex-feed .ledger{box-shadow:none}
+  .ms-ex-note{margin-top:12px;font-size:16px;line-height:1.55}
+  .ms-bridge{margin-top:26px;padding:16px 0 4px;border-bottom:0;gap:4px 12px}
+  .ms-bridge h2{font-size:15.5px}
+  .ms-bridge .rich{font-size:16px;line-height:1.55}
+  .ms-atwork{margin-top:14px;border-top:1px solid var(--hair)}
+  .ms-atwork summary{min-height:48px;font-size:15.5px}
+  .ms-atwork .rich{font-size:16px;line-height:1.55;padding-left:0}
+
+  /* ----- Task: request, two chips, console ----- */
+  .ms-do{display:flex;flex-direction:column;border-left:0;background:var(--ground);container:step / size}
+  .is-review .ms-do{--ms-bg:var(--ground)}
+  .ms-stage{flex:0 1 auto;display:flex;flex-direction:column;min-height:0;overflow:visible}
+  .ms-upper{position:relative;inset:auto;flex:0 1 auto;min-height:0;max-height:25vh;max-height:34cqh;overflow-x:hidden;overflow-y:auto;background:linear-gradient(transparent,var(--ground) 70%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 100%,var(--hair-2),transparent) bottom/100% 8px no-repeat scroll}
+  .ms-upper.target-open{max-height:40vh;max-height:56cqh}
+  .ms-upper-in{display:block;max-width:none;padding:0}
+  .ms-tables{display:none}
+
+  .ms-ticket,.ms-ticket.has-stub{display:block;background:none;box-shadow:none;border-radius:0;-webkit-mask-image:none;mask-image:none}
+  .ms-ticket .tk-main{padding:10px var(--g) 11px}
+  .ms-ticket .tk-top{margin-bottom:4px;flex-wrap:nowrap;font-size:14px}
+  .ms-ticket .tk-top>span:last-child{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ms-ticket .tk-avatar{width:26px;height:26px;font-size:11.5px}
+  .ms-ticket .tk-task,.is-review .ms-ticket .tk-task{font-size:16px;line-height:1.45}
+  .ms-ticket:not(.stub-open) .tk-wanted,.ms-ticket:not(.stub-open) .tk-stub{display:none}
+  .ms-ticket .tk-wanted{margin-top:8px}
+  .ms-ticket.has-stub .tk-stub{border:0;border-top:1px dashed var(--ticket-hair);padding:8px var(--g) 10px}
+  .ms-stub-t{display:none}
+  .ms-stub-b{padding:0}
+  .ms .ledger.compact .lg,.ms-peek .ledger.compact .lg{font-size:14px}
+  .ms-q .tk-closed{position:static;display:inline-block;margin:12px 0 10px}
+  /* The closed mark sits in the header line, level with the requester's name. */
+  .ms-ticket{position:relative}
+  .ms-ticket .tk-closed,.ms-ticket.has-stub.stub-open .tk-closed,.ms-ticket.has-stub:not(.stub-open) .tk-closed{position:absolute;display:block;left:auto;right:var(--g);top:14px;bottom:auto;margin:0}
+  .ms-ticket:has(>.tk-closed) .tk-top{padding-right:164px}
+  .ms-ticket:not(:has(.tk-top)) .tk-closed{position:static;display:inline-block;margin:0 var(--g) 10px}
+
+  /* A long request stops at a whole line. The fade and Read all say there is more. */
+  .ms-upper.is-clamped{overflow:hidden;background:none}
+  .ms-upper.is-clamped::after{content:"";position:absolute;left:0;right:0;bottom:0;height:20px;background:linear-gradient(transparent,var(--ground));pointer-events:none}
+  .ms-req-more{position:absolute;right:0;bottom:0;z-index:2;align-items:flex-end;min-height:44px;padding:0 var(--g) 2px 34px;background:linear-gradient(to right,transparent,var(--ground) 26px) bottom/100% 24px no-repeat}
+  .ms-req-more[hidden]{display:none}
+  .ms-do.req-open .ms-stage{flex:1 1 0}
+  .ms-do.req-open .ms-upper{flex:1 1 0;max-height:none;overflow-y:auto}
+  .ms-do.req-open .ms-chips,.ms-do.req-open .ms-dock{display:none}
+  .ms-do.req-open .ms-req-more{position:sticky;left:auto;display:flex;justify-content:flex-end;align-items:center;width:100%;padding:0 var(--g);background:linear-gradient(transparent,var(--ground) 40%)}
+
+  .ms-chips{flex:none;display:flex;gap:8px;padding:0 var(--g) 9px}
+  .ms-chip{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font:600 15px/1 var(--f-body);color:var(--text);background:var(--ground-3);border-radius:4px;box-shadow:inset 0 0 0 1px var(--hair-2)}
+  .ms-chip-i{display:grid;place-items:center;color:var(--text-3);transition:rotate .16s}
+  .ms-chip-i svg{width:10px;height:10px}
+  .ms-chip[aria-expanded="true"] .ms-chip-i{rotate:180deg}
+  .ms-chip-dot{display:none;width:9px;height:9px;border-radius:50%;background:var(--help-mark)}
+  .ms-chip.has-lit{box-shadow:inset 0 0 0 1.5px var(--help)}
+  .ms-chip.has-lit .ms-chip-dot{display:block}
+
+  /* The console takes all the height that is left, down to the bottom bar. */
+  .ms-dock{flex:1 1 0;min-height:128px;width:auto;max-width:none;margin:0;padding:0}
+  .ms-mc{height:100%;min-height:0;border-radius:0;box-shadow:none}
+  .ms-bar{flex:none;min-height:38px;padding:4px var(--g)}
+  .ms-note,.ms-mc .slot{display:none}
+  .ms-hint{font-size:16px}
+  .ms-hints-h .plain{min-height:44px}
+  /* Hints slide up as a sheet over the task, so an error slip above them stays whole. */
+  dialog.ms-hintsheet{max-height:62vh;overflow:hidden;background:var(--mc-2);border-color:var(--mc-hair);border-radius:14px 14px 0 0;color:var(--mc-text)}
+  dialog.ms-hintsheet .dlg-h{display:none}
+  dialog.ms-hintsheet .dlg-b{padding:0}
+  .ms-hintsheet .ms-hints{max-height:calc(62vh - env(safe-area-inset-bottom,0px));padding:6px 16px 24px;border-bottom:0}
+  .ms-hintsheet .ms-hints-h{margin:-6px -16px 4px;padding:10px 16px;border-bottom:1px solid var(--mc-divider);font-size:17px}
+  /* The sheet sits outside the console, so in the light theme it borrows the console's colours for links, code, buttons and focus. */
+  :root[data-theme="light"] dialog.ms-hintsheet{--term:var(--sx-kw);--code-bg:var(--mc-code-bg);--code-fg:var(--mc-code-fg);--text:var(--mc-text);--text-3:var(--mc-text-3);--hair-2:var(--mc-hair);--focus:var(--paper)}
+  .ms-edbox{flex:1 1 0;min-height:0;--ed-max-h:none}
+  .ms-edhost{height:100%;min-height:0}
+  /* 14px code fits about 42 characters on a line, so wrapped queries keep more of their shape. */
+  .ms .ed{height:100%;--ed-pad-x:var(--g);--ed-font:14px;--ed-lh:24px}
+  .ms .ed-scroll{height:100%;max-height:none}
+  /* A soft edge says there is more of the query above or below. */
+  .ms .ed-scroll{background:linear-gradient(var(--mc) 40%,transparent) top/100% 18px no-repeat local,linear-gradient(transparent,var(--mc) 60%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 0,var(--mc-hair),transparent) top/100% 12px no-repeat scroll,radial-gradient(farthest-side at 50% 100%,var(--mc-hair),transparent) bottom/100% 12px no-repeat scroll}
+  .ms .ed-code{min-height:0}
+  .ms-under{flex:none;padding:9px var(--g);font-size:16px}
+
+  /* A blank run or a SQL error stays on this step. The slip sits above the editor and scrolls inside itself. */
+  .ms-tray{display:none}
+  .ms[data-step="task"] .ms-tray.has-slip{position:relative;inset:auto;display:flex;order:-1;flex:0 1 auto;min-height:0;width:auto;max-width:none;margin:0;padding:0;transition:none}
+  .ms[data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-upper{display:none}
+  .ms[data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])){max-height:64vh;max-height:68cqh}
+  .ms[data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-chips{padding-top:8px}
+  .ms-tray.has-slip::after{display:none}
+  .ms-slip{flex:1 1 auto;width:100%;max-height:none;border-radius:0;box-shadow:none;font-size:16px;line-height:1.45}
+  .ms-slip-b{display:flex;flex-direction:column;padding:10px var(--g) 12px;background:linear-gradient(transparent,var(--paper) 70%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 100%,var(--paper-rule-2),transparent) bottom/100% 8px no-repeat scroll}
+  .ms-slip-b>h3{order:1}
+  .ms-slip-b>.rich{order:2}
+  .ms-slip .help-act{order:3;margin:10px 0 2px}
+  .ms-sliptips{order:4;margin-top:8px}
+  .ms-slip-b>.help-sub{order:5}
+  .ms-slip-b>.help-raw{order:6}
+  .ms-slip .fixbtn{min-height:44px}
   .ms-leader{display:none}
 
-  /* Console */
-  .ms-dock{padding:0 var(--g);margin:0;max-width:none;scroll-margin-bottom:calc(var(--bar-h,64px) + 10px + var(--kb,0px));scroll-margin-top:60px}
-  .ms-mc{scroll-margin-bottom:calc(var(--bar-h,64px) + 10px + var(--kb,0px));scroll-margin-top:60px}
-  .ms-note,.ms-mc .slot{display:none}
-  .ms-bar{min-height:44px}
-  .ms-bar .ms-over2{display:inline-flex;margin-left:auto;min-height:44px;font-size:14.5px}
-  .ms-edbox{--ed-max-h:min(44vh,300px)}
-  .paper-up:not(.ed-focus) .ms-edbox{--ed-max-h:103px}
+  /* The pinned request */
+  .ms-pin{min-height:44px;padding:0 12px 0 var(--g);font-size:15px;cursor:pointer}
+  .ms-pin-low{display:none}
+  .ms-pin-text code{white-space:nowrap}
+  .ms-pin .tlink{min-height:44px;font-size:14px}
+  .ms-pin.open{padding-top:8px;padding-bottom:6px;cursor:default}
+  .ms-pin.open .ms-pin-text{max-height:112px}
+  .ms-pin-full{max-height:min(38vh,220px)}
 
-  /* The bottom bar changes with context */
-  .ms-keys{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:50;margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:var(--bar-solid);border-top:1px solid var(--hair);box-shadow:var(--shadow-menu);gap:10px;min-height:60px}
-  .ms-keys .key{min-height:48px}
-  .ms-keys .key.big{min-height:48px;font-size:16.5px}
-  .ms-keys .sp,.ms-enter,.ms-over,.ms-again{display:none}
-  .ms-keys .kbd{display:none}
-  .ms-keys .key:not(.canary){background:var(--ground-4);color:var(--text);box-shadow:inset 0 0 0 1px var(--hair-2),0 2px 0 var(--hair-2)}
+  /* With the keyboard up: one line of request, the editor, the key bar. Nothing else. */
+  .ms-req1{align-items:center;flex:none;width:100%;min-height:40px;padding:0 var(--g);font-size:14.5px;line-height:1.25;text-align:left;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--hair)}
+  .ms-req1 b{font-weight:600;color:var(--text)}
+  .ms-req1 .rich{display:inline}
+  .ms-req1 code{white-space:nowrap}
+  .ms.kb-up .ms-req1{display:block;line-height:39px}
+  .ms.kb-up .ms-segs,.ms.kb-up .ms-upper,.ms.kb-up .ms-chips,.ms.kb-up .ms-tray,.ms.kb-up .ms-keys{display:none!important}
+  .ms.kb-up .ms-stage{flex:none;max-height:none!important}
+  .ms.kb-up .ms-do{padding-bottom:var(--keybar-h,0px)}
+  .ms.kb-up .ms-dock{min-height:0}
+
+  /* ----- Result: paper fills the step, edge to edge ----- */
+  .ms[data-step="result"] .ms-do{background:var(--paper)}
+  .ms[data-step="result"] .ms-upper,.ms[data-step="result"] .ms-chips,.ms[data-step="result"] .ms-req1,.ms[data-step="result"] .ms-dock{display:none!important}
+  .ms[data-step="result"] .ms-stage{flex:1 1 0}
+  .ms[data-step="result"] .ms-tray{position:relative;inset:auto;display:flex;flex:1 1 0;min-height:0;width:auto;max-width:none;margin:0;padding:0;transition:none}
+  .ms-sheet{flex:1 1 0;width:100%;min-height:0;max-height:none;box-shadow:none;border-radius:0}
+  .ms-sheet .ms-pin,.ms-sheet .ms-pin.open{flex:none}
+  .ms-sheet .vband{flex:0 1 auto;min-height:0;grid-template-rows:minmax(0,1fr);gap:0 10px;padding:10px 14px 10px var(--g);overflow:hidden;font-size:16px;line-height:1.42}
+  .ms-sheet .ms-band-t,.ms-sheet:not(:has(.ledger)) .ms-band-t{align-self:stretch;min-height:0;max-height:none;overflow-x:hidden}
+  .ms-sheet .vband-title{font-size:18px}
+  .ms-sheet .validation{width:auto;min-height:0;padding:0;border:0;align-self:start}
+  .ms-sheet .validation small{display:none}
+  .ms-sheet .not-yet{display:block;padding:3px 6px;font-size:12.5px;line-height:1.1;letter-spacing:.05em;white-space:nowrap;border-radius:2px;box-shadow:inset 0 0 0 1.5px currentColor;rotate:-3deg}
+  .ms-sheet[data-state="pass"] .vband{display:flex;flex-direction:column;min-height:116px}
+  .ms-sheet[data-state="pass"] .ms-band-t{flex:0 1 auto}
+  .ms-sheet[data-state="pass"] .validation,.ms-sheet:not(:has(.ledger)) .validation.stamped{float:right;width:96px;height:96px;min-height:96px;margin:0 0 2px 8px}
+  .ms-sheet.is-landing .ms-band-t .validation{visibility:visible}
+  /* A verdict longer than its band: a fade over the last line, and More gives it the rows' height. */
+  .ms-band-more{position:absolute;right:0;bottom:0;z-index:3;align-items:flex-end;min-height:44px;padding:0 var(--g) 3px 34px;background:linear-gradient(to right,transparent,var(--paper) 26px) bottom/100% 24px no-repeat}
+  .ms-band-more[hidden],.ms-sheet.is-landing:not(.is-stamped) .ms-band-more{display:none}
+  .ms-band-i{display:grid;place-items:center}
+  .ms-band-i svg{width:10px;height:10px;transition:rotate .16s}
+  .ms-sheet.band-open .ms-band-i svg{rotate:180deg}
+  .vband.has-more::after{content:"";position:absolute;left:0;right:0;bottom:0;height:38px;z-index:2;background:linear-gradient(transparent,var(--paper) 80%);pointer-events:none}
+  .ms-sheet.band-open .vband{flex:1 1 0}
+  .ms-sheet.band-open .ms-band-t{padding-bottom:40px}
+  .ms-sheet.band-open .ms-results{display:none}
+  .ms-sheet.band-open .ms-foot0{display:none}
+  .ms-sheet.is-landing.is-stamped .ms-band-t{animation:none}
+  .ms-sheet.is-landing.is-stamped .ms-band-t>:not(.validation){animation:msWin .22s ease both}
+  .ms-change{font-size:16px;line-height:1.4}
+  .ms-meta .tlink{min-height:44px}
+
+  /* Rows take the rest, and always keep room for five, even with a long verdict. */
+  .ms-results{flex:1 1 var(--res-min,240px);min-height:var(--res-min,240px)}
+  .ms-sheet .ledger{--row:30px}
+  .ms-sheet .ledger:not(.compact) .lg-wrap{padding:0}
+  .ms-sheet .ledger:not(.compact) .lg-wrap::before,.ms-sheet .ledger:not(.compact) .lg-wrap::after{display:none}
+  .ms-sheet .ledger:not(.compact) .lg-scroll{background-image:none}
+  .ms-sheet .lg td,.ms-sheet .lg th{padding:0 10px}
+  .ms-sheet .lg .rn{padding:0 8px 0 4px}
+  .ms-sheet .lg-foot,.ms-foot0{flex-wrap:nowrap;gap:8px;min-height:48px;padding:0 12px 0 var(--g);row-gap:0}
+  .ms-sheet .lg-foot>.sp{flex:1 1 0;min-width:0}
+  .ms-sheet .lg-count{flex:0 1 auto;min-width:0;font-size:13px;line-height:1.2}
+  .ms-sheet .lg-foot:not(.ms-foot0)>.tlink{display:none}
+  .ms-foot0{margin-top:auto}
+  .ms-foot0 .tlink{min-height:44px}
+  .ms-cmp{flex:none}
+  .ms-cmp button{height:44px;padding:0 9px;font-size:13.5px}
+  .ms-cmp button{position:relative}
+  .ms-copy-w{display:block;position:relative;flex:none}
+  .ms-copy{justify-content:center;min-width:44px;min-height:44px;font-weight:600;font-size:14.5px}
+  .ms-copy-m{position:absolute;right:0;bottom:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:190px;padding:4px;background:var(--paper);border-radius:4px;box-shadow:var(--shadow-menu),0 0 0 1px var(--paper-rule-2)}
+  .ms-copy-i{min-height:44px;padding:0 12px;text-align:left;font-size:15.5px;color:var(--paper-ink);border-radius:3px}
+  .ms-copy-i:hover{background:var(--paper-code-bg)}
+  .ms-results.many .lg-scroll{max-height:190px}
+
+  /* ----- The bottom bar: one main action, in thumb reach ----- */
+  .ms-keys{position:relative;z-index:5;grid-row:4;display:flex;flex-wrap:nowrap;align-items:center;gap:10px;min-height:64px;padding:6px max(12px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:var(--ground-3);border-top:1px solid var(--hair)}
+  .ms-keys .sp,.ms-keys .ms-enter,.ms-keys .kbd{display:none}
+  .ms-keys .key.big{flex:1 1 0;min-width:0;min-height:50px;padding:0 14px;font-size:17px}
+  .ms-keys .key:not(.canary){flex:none;min-height:46px;padding:0 13px;background:var(--ground-4);color:var(--text);box-shadow:inset 0 0 0 1px var(--hair-2),0 2px 0 var(--hair-2);font-size:15.5px}
   .ms-keys .key:not(.canary):hover{background:var(--ground-3)}
-  /* The bar sits on the page, not on the terminal, so its focus ring and quiet keys use the page's colors in both themes. */
   .ms-keys :focus-visible,.ms-keys .key.canary:focus-visible{outline-color:var(--focus)}
-  .ms-keys .ghost{color:var(--text);box-shadow:inset 0 0 0 1px var(--hair-2)}
-  .ms-keys .ghost:hover{background:var(--code-bg);box-shadow:inset 0 0 0 1px var(--text-3)}
-  .ms-jump{display:none;flex:1 1 auto}
-  .ms-run{flex:1 1 auto}
-  .ms-hintb{flex:none;padding:0 16px}
+  .ms-keys .ghost{flex:none;min-height:46px;padding:0 6px;font-size:14.5px;color:var(--text-2);background:none;box-shadow:none;text-decoration:underline;text-decoration-color:var(--hair-2);text-underline-offset:3px}
+  .ms-keys .ghost:hover{background:none;box-shadow:none;color:var(--text)}
+  .ms-keys .ms-model{flex:0 1 auto;line-height:1.15;text-align:left}
   .pips i{box-shadow:inset 0 0 0 1.25px var(--text-3)}
-  .pips i.on{background:var(--text)}
-  .ms-model{flex:0 1 auto;white-space:normal;line-height:1.1;font-size:14px;min-height:48px}
+  .pips i.on{background:var(--text);box-shadow:none}
+  .ms-run{max-width:none}
+  .ms-run-l{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.14;text-align:center}
+  .ms-again{order:-1}
+  .ms-hintb{order:-2}
+  .ms-over{order:-1}
+  .is-passed .ms-over{display:none}
+  .ms.is-cleared[data-step="task"]:not(.is-passed):not(.is-passing) .ms-qnext{display:inline-flex;align-items:center;flex:none;order:-1}
+  .ms-toast .tlink{min-width:44px;justify-content:center}
 
-  .ms[data-bar="read"] .ms-jump{display:inline-flex}
-  .ms[data-bar="read"] .ms-hintb,.ms[data-bar="read"] .ms-run,.ms[data-bar="read"] .ms-model{display:none!important}
-  .ms[data-bar="next"] .ms-jump,.ms[data-bar="next"] .ms-hintb{display:none!important}
+  .ms[data-step="learn"] .ms-keys>:not(.ms-try){display:none!important}
+  .ms[data-step="learn"] .ms-try{display:inline-flex}
+  .ms[data-step="result"]:not(.is-passed):not(.is-passing) .ms-keys>:not(.ms-edit):not(.ms-hintb){display:none!important}
+  .ms[data-step="result"]:not(.is-passed):not(.is-passing) .ms-edit{display:inline-flex}
+  .ms.is-passing .ms-keys>:not(.ms-run){display:none!important}
+  .ms.is-passed:not([data-step="learn"]) .ms-keys>:not(.ms-run):not(.ms-again){display:none!important}
 
-  /* Quiz: nothing to run, so the bar waits until there is a next step */
+  /* ----- Quiz: Learn | Question ----- */
   .ms-keys-quiz{display:flex}
+  .is-quiz .ms-stage{flex:1 1 0}
+  .is-quiz .ms-upper,.is-quiz .ms-upper.target-open{flex:1 1 0;max-height:none}
+  .is-quiz .ms-upper-in{padding:14px var(--g) 18px}
+  .is-quiz .ms-dock{display:none}
+  .ms.is-quiz[data-step="task"]:not(.is-passed):not(.is-passing):not(.is-cleared) .ms-keys{display:none}
+  .ms.is-quiz.is-cleared[data-step="task"] .ms-keys{justify-content:flex-end}
   .is-quiz .ms-run:not(.is-next){display:none}
-  .is-quiz[data-bar="work"]:not(.is-passed) .ms-keys{display:none}
-  .is-quiz .ms-dock{margin-top:0}
-}
-@media (max-width:599px){
-  .ms-long{display:none}
-  .ms-short{display:inline}
-  .ms-ticket .tk-closed,.ms-q .tk-closed{position:static;display:inline-block;margin:0 15px 11px}
-}
-/* A small phone: the rows matter most, so the status line steps aside while paper is up. */
-@media (max-width:999px) and (max-height:720px){
-  .paper-up:not(.ed-focus) .ms-bar{display:none}
-  .paper-up:not(.ed-focus) .ms-edbox{--ed-max-h:77px}
-  .ms-band-t{max-height:clamp(64px,calc(var(--stage-h) - 300px),150px)}
-  .ms-meta{margin-top:3px;padding-top:2px}
-  .ms-sheet .ms-pin{min-height:40px}
-  .ms-pin .tlink{min-height:40px;position:relative}
-  .ms-pin .tlink::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;translate:0 -50%}
+  .is-quiz.is-passing .ms-keys{display:none}
+  .ms-q{background:none;box-shadow:none;border-radius:0}
+  .ms-q .tk-main{padding:0}
+  .ms-q .tk-task{font-size:17.5px;line-height:1.48}
+  .ms-q-code{margin:12px calc(var(--g)*-1) 0}
+  .ms-q-code .codeblock{border-radius:0}
+  .ms-q-code .codeblock pre,.ms-answer .codeblock pre,.ms-model-b .codeblock pre{white-space:pre-wrap;overflow-wrap:anywhere}
+  .ms-q-feed{display:block;margin:0}
+  .ms-q-feed .ledger{box-shadow:none}
+  .ms-choices{gap:10px;margin-top:4px}
+  .ms-choice-b{min-height:60px;padding:12px 14px;font-size:17px;line-height:1.38}
+  .ms-why{font-size:16px;line-height:1.5}
+  /* After the right answer the paper sits under the chosen card, with the stamp and the win text. */
+  .is-quiz .ms-tray{position:relative;inset:auto;display:flex;flex:none;max-height:56%;width:auto;max-width:none;margin:0;padding:0;transition:none}
+  .is-quiz .ms-sheet .ms-pin{display:none}
+  .is-quiz .ms-sheet{flex:0 1 auto;box-shadow:0 -1px 0 var(--paper-rule-2)}
+  .is-quiz .ms-sheet .vband{height:100%;border-bottom:0}
+
+  /* ----- Order: request, tiles as large rows, the built query in the terminal, Run ----- */
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])){max-height:none}
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-upper{display:block}
+  .ms[data-type="order"][data-step="task"] .ms-tray.has-slip{max-height:44cqh}
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) :is(.ms-ticket,.ms-tilewrap .ms-sub){display:none}
+  .ms[data-type="order"][data-step="task"] .ms-stage:has(.ms-tray.has-slip:not([hidden])) .ms-tilewrap{padding-top:10px}
+  .ms[data-type="order"] .ms-stage{flex:1 1 0}
+  .ms[data-type="order"] .ms-upper,.ms[data-type="order"] .ms-upper.target-open{flex:1 1 0;max-height:none}
+  .ms[data-type="order"] .ms-dock{flex:0 1 auto;min-height:0;max-height:46cqh}
+  .ms[data-type="order"] .ms-mc{height:auto;max-height:100%}
+  .ms[data-type="order"] .ms-edbox{flex:0 1 auto;overflow:auto}
+  .ms[data-type="order"] .ms-edhost{height:auto}
+  .ms-tilewrap{padding:4px var(--g) 12px}
+  .ms-tile{min-height:50px;font-size:16px}
+  .ms-tile code{font-size:15.5px}
+  .ms-builtbox{max-height:none;padding:4px 0}
+  .ms-line{min-height:44px;padding:4px var(--g)}
+  .ms-line-empty{min-height:30px;padding:0 var(--g)}
+  /* Only placed lines and one prompt, so the tiles keep the height. */
+  .ms-line-empty~.ms-line-empty{display:none}
+  .ms[data-type="order"] .ms-do:has(.ms-tiles-e:not([hidden])) .ms-dock{max-height:72cqh}
+  .ms-line code{font-size:15px}
+
+  /* ----- Tables sheet ----- */
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .col{display:flex;align-items:center;flex-wrap:wrap;gap:0 8px;min-height:44px;padding:6px 10px;line-height:1.3;font-size:15px}
+  .col code{font-size:15px;margin-right:0}
+  .col .use-this{margin-left:0}
+  .ms-peekb{height:44px}
+  .tbl-n{min-height:52px}
+  .ms-tsheet{display:flex;flex-direction:column;gap:12px}
+  .ms-tsheet-l{font-size:15px;line-height:1.35;color:var(--text-2)}
+  .ms-tsheet h3{font:600 15.5px/1.2 var(--f-body);letter-spacing:0;margin-top:6px}
+  .ms-tsheet-all{align-self:flex-start;min-height:44px}
+
+  /* ----- Short screens: a phone on its side, or a small window ----- */
+  @media (max-height:500px){
+    .ms-mbar-row{height:44px}
+    .ms-segs .ms-seg{min-height:40px}
+    .ms-upper{max-height:26cqh}
+    .ms-chips{padding-bottom:6px}
+    .ms-keys{min-height:56px;padding-top:3px;padding-bottom:calc(3px + env(safe-area-inset-bottom,0px))}
+    .ms-keys .key.big{min-height:46px}
+    .ms-results{flex-basis:124px;min-height:124px}
+    .ms-ticket .tk-closed{display:none}
+    .ms-ticket:has(>.tk-closed) .tk-top{padding-right:0}
+    .ms-upper.is-clamped::after{height:9px}
+  }
+  /* On its side, a Result with rows puts the text on the left and the rows on the right, each with the full height.
+     More is not needed there, and a band opened upright still shows its rows. A Result with no rows keeps the full width. */
+  @media (max-height:449px){
+    .ms-sheet .ms-pin{display:none}
+    .ms-sheet:has(.ledger){display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:minmax(0,1fr)}
+    .ms-sheet:has(.ledger) .vband,.ms-sheet:has(.ledger)[data-state="pass"] .vband,.ms-sheet.band-open:has(.ledger) .vband{display:flex;flex-direction:column;height:100%;min-height:0;max-height:none;overflow:auto;padding-top:7px;padding-bottom:7px;border-right:1px solid var(--paper-rule);border-bottom:0}
+    .ms-sheet:has(.ledger) .ms-results,.ms-sheet.band-open:has(.ledger) .ms-results{display:flex;height:100%;min-height:0}
+    .ms-sheet:has(.ledger) .ms-band-more{display:none}
+    .ms-sheet:has(.ledger) .vband.has-more::after{display:none}
+    .ms-sheet:not([data-state="pass"]) .validation{margin-right:62px}
+    .ms-sheet:has(.ledger)[data-state="pass"] .validation{width:80px;height:80px;min-height:80px;margin:0 56px 0 8px}
+    .ms-sheet:not(:has(.ledger)) .validation.stamped{width:62px;height:62px;min-height:62px;margin:0 56px 0 8px}
+    .ms-sheet .lg-foot,.ms-foot0{min-height:44px}
+  }
 }
 
 @media (prefers-reduced-motion:reduce){

@@ -183,6 +183,9 @@ ORDER BY o.bucket;`;
     /* Read it each time: restoring a backup, or another tab, replaces the object. */
     const sc = () => State.scratch();
     UI.setTitle('Scratchpad');
+    /* Below 1000px the screen works like a mission: one pane at a time, under Query, Result and Tables tabs. */
+    const isPhone = () => !UI.isWide();
+    const tapWord = () => (UI.coarse() && isPhone() ? 'Tap' : 'Click');
 
     let alive = true;
     let isExample = sc().text === null || sc().text === undefined || sc().text === SAMPLE;
@@ -209,6 +212,8 @@ ORDER BY o.bucket;`;
     const exampleTag = el('span', { class: 'sp-tag sp-tag-bar', text: 'Example' });
 
     const edHost = el('div', { class: 'sp-edhost' });
+    /* Phone: a help slip stays on the Query pane, above the editor, so the marked word and Run stay in view. */
+    const phoneSlip = el('div', { class: 'sp-phslip', hidden: true });
     const runBtn = el('button', { type: 'button', class: 'key canary sp-run', onClick: () => run() }, 'Run', el('span', { class: 'kbd', text: UI.runKeys() }));
     const saveBtn = el('button', { type: 'button', class: 'ghost', text: 'Save this query', onClick: () => saveDialog() });
     const clearBtn = el('button', { type: 'button', class: 'ghost', text: 'Clear', onClick: () => clearEditor() });
@@ -217,6 +222,7 @@ ORDER BY o.bucket;`;
     const consoleBox = el('div', { class: 'mc sp-console' },
       el('div', { class: 'mc-bar' }, lamp, exampleTag, statusB, statusNote, growBtn),
       exampleBar,
+      phoneSlip,
       edHost,
       el('div', { class: 'mc-act' }, saveBtn, clearBtn, exampleBtn, el('span', { class: 'sp' }), runBtn));
 
@@ -244,9 +250,12 @@ ORDER BY o.bucket;`;
     const tabLabel = {};
     const switchTab = (name) => {
       lastTab = name;
+      /* On a phone this rail is the Tables pane. History and Saved live in a sheet. */
+      const shown = UI.isWide() ? name : 'tables';
       for (const k of Object.keys(tabBtns)) {
         tabBtns[k].setAttribute('aria-pressed', k === name ? 'true' : 'false');
-        panels[k].hidden = k !== name;
+        if (libSheet && k !== 'tables') continue;
+        panels[k].hidden = k !== shown;
       }
     };
     const makeTab = (name, label) => {
@@ -257,37 +266,133 @@ ORDER BY o.bucket;`;
     makeTab('tables', 'Tables');
     makeTab('history', 'History');
     makeTab('saved', 'Saved');
+    const railBody = el('div', { class: 'sp-rail-body' }, panels.tables, panels.history, panels.saved);
     const rail = el('aside', { class: 'sp-rail', 'aria-label': 'Reference, history and saved queries' },
       el('div', { class: 'seg sp-tabs', role: 'group', 'aria-label': 'Choose a panel' }, tabBtns.tables, tabBtns.history, tabBtns.saved),
-      el('div', { class: 'sp-rail-body' }, panels.tables, panels.history, panels.saved),
+      railBody,
       el('p', { class: 'sp-worknote', text: WORK_NOTE }));
 
-    const page = el('div', { class: 'sp-page' }, work, rail);
+    /* ---------- Phone: Query, Result and Tables tabs, with a fixed Run ---------- */
+    const PANES = [['query', 'Query', consoleBox], ['result', 'Result', out], ['tables', 'Tables', rail]];
+    const paneBtns = {};
+    const paneTabs = el('div', { class: 'sp-ptabs', role: 'tablist', 'aria-label': 'Scratchpad steps' });
+    let pane = 'query';
+    function setPane(name, opts) {
+      const o = opts || {};
+      pane = name;
+      page.dataset.pane = name;
+      PANES.forEach(([k]) => {
+        paneBtns[k].setAttribute('aria-selected', k === name ? 'true' : 'false');
+        paneBtns[k].tabIndex = k === name ? 0 : -1;
+      });
+      if (name === 'query') ed.refresh();
+      if (name === 'tables') {
+        const hit = refList.querySelector('.sp-col.want');
+        if (hit) requestAnimationFrame(() => hit.scrollIntoView({ block: 'center' }));
+      }
+      if (o.say) UI.announce(PANES.find((p) => p[0] === name)[1]);
+    }
+    function setHasResult(on) {
+      paneBtns.result.disabled = !on;
+      if (!on && pane === 'result') setPane('query');
+    }
+    PANES.forEach(([k, label]) => {
+      paneBtns[k] = el('button', { type: 'button', role: 'tab', id: 'sp-tab-' + k, 'aria-controls': 'sp-pane-' + k, 'aria-selected': 'false', text: label, onClick: () => setPane(k, { say: true }) });
+      paneTabs.append(paneBtns[k]);
+    });
+    paneTabs.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const on = PANES.map((p) => p[0]).filter((k) => !paneBtns[k].disabled);
+      const next = on[(on.indexOf(pane) + (e.key === 'ArrowRight' ? 1 : on.length - 1)) % on.length];
+      e.preventDefault();
+      setPane(next, { say: true });
+      paneBtns[next].focus();
+    });
+    /* The tab roles exist only while the tabs are on screen. */
+    function applyLayout() {
+      const phone = isPhone();
+      PANES.forEach(([k, , node]) => {
+        node.id = 'sp-pane-' + k;
+        if (phone) { node.setAttribute('role', 'tabpanel'); node.setAttribute('aria-labelledby', 'sp-tab-' + k); }
+        else { node.removeAttribute('role'); node.removeAttribute('aria-labelledby'); }
+      });
+    }
+
+    const page = el('div', { class: 'sp-page', dataset: { pane: 'query' } }, paneTabs, work, rail);
     container.append(page);
 
-    /* Phone: Run lives in a bottom bar that stays above the keyboard. */
-    const backBtn = el('button', {
-      type: 'button', class: 'ghost sp-back', text: 'Back to the editor', hidden: true,
-      onClick: () => { consoleBox.scrollIntoView({ block: 'start', behavior: UI.motionOK() ? 'smooth' : 'auto' }); ed.focus(); }
-    });
+    /* Phone: Run lives in a bottom bar, one thumb away, and the rest of the query actions wait in a sheet. */
+    const libBtn = el('button', { type: 'button', class: 'ghost sp-libbtn', 'aria-haspopup': 'dialog', text: 'Your queries', onClick: () => openLibrary() });
     const barRun = el('button', { type: 'button', class: 'key canary big sp-barrun', text: 'Run', onClick: () => run() });
-    const bar = el('div', { class: 'sp-bar' }, backBtn, el('span', { class: 'sp' }), barRun);
+    const bar = el('div', { class: 'sp-bar' }, libBtn, barRun);
     page.append(bar);
+
+    function putSlip(node) {
+      if (isPhone()) {
+        out.replaceChildren();
+        setHasResult(false);
+        phoneSlip.replaceChildren(node);
+        phoneSlip.hidden = false;
+        setPane('query');
+      } else {
+        out.replaceChildren(node);
+      }
+    }
+    function clearSlip() {
+      if (phoneSlip.hidden) return;
+      phoneSlip.replaceChildren();
+      phoneSlip.hidden = true;
+    }
+
+    /* History, Saved and the quieter query actions, in one sheet. */
+    let libSheet = null;
+    function openLibrary() {
+      let tab = sc().history.length || !sc().saved.length ? 'history' : 'saved';
+      const seg = el('div', { class: 'seg sp-libseg', role: 'group', 'aria-label': 'Choose a list' });
+      const show = (k) => {
+        tab = k;
+        panels.history.hidden = k !== 'history';
+        panels.saved.hidden = k !== 'saved';
+        seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.k === k ? 'true' : 'false'));
+      };
+      [['history', 'History', sc().history.length], ['saved', 'Saved', sc().saved.length]].forEach(([k, label, n]) => {
+        seg.append(el('button', { type: 'button', dataset: { k }, onClick: () => show(k) }, label, ' ', el('span', { class: 'sp-tab-n', text: n || '' })));
+      });
+      const row = (label, fn, keepHidden) => (keepHidden ? null : el('button', { type: 'button', class: 'menu-row', onClick: fn }, el('span', { text: label })));
+      const body = el('div', { class: 'sp-lib' },
+        el('div', { class: 'sheet-group' },
+          row('Save this query', () => { libSheet.close(); saveDialog(); }),
+          row('Clear the editor', () => clearEditor()),
+          row('Load the example', () => loadSql(SAMPLE, { toast: 'The example report is back in the editor.' }), isExample)),
+        seg, panels.history, panels.saved);
+      libSheet = UI.sheet({
+        title: 'Your queries', body,
+        onClose: () => {
+          libSheet = null;
+          railBody.append(panels.history, panels.saved);
+          switchTab(lastTab);
+        }
+      });
+      show(tab);
+    }
 
     /* ---------- Editor ---------- */
     let saveTimer = 0;
     const saveText = () => { clearTimeout(saveTimer); sc().text = ed.value; State.commit(); };
     const ed = Editor.create(edHost, {
-      id: 'scratchpad', value: sc().text, label: 'SQL editor for the scratchpad', lines: { min: 5, max: 40 }, autocomplete: true, keybar: true,
+      id: 'scratchpad', value: sc().text, label: 'SQL editor for the scratchpad', lines: { min: 5, max: 40 }, autocomplete: true, keybar: true, runKey: true,
       onInput: () => {
         sc().text = ed.value;
         clearTimeout(saveTimer);
         saveTimer = setTimeout(saveText, 400);
         setExample(ed.value === SAMPLE);
+        clearSlip();
         ready();
       },
       onRun: () => run()
     });
+    /* A tap anywhere in the tall terminal starts typing, not only on the lines of text. */
+    edHost.addEventListener('click', (e) => { if (isPhone() && !e.target.closest('textarea')) ed.focus(); });
 
     /** A query opens at its first line, whatever was selected before. */
     function toTop() {
@@ -334,13 +439,16 @@ ORDER BY o.bucket;`;
       ed.clearError();
       showIdle();
       ready();
+      if (libSheet) libSheet.close();
+      if (isPhone()) setPane('query');
       if (o.toast || kept) UI.toast((o.toast || 'Loaded.') + (kept ? ' Your earlier query is in History.' : ''));
-      if (matchMedia('(max-width:999px)').matches) consoleBox.scrollIntoView({ block: 'start', behavior: UI.motionOK() ? 'smooth' : 'auto' });
       toTop();
       if (!UI.coarse()) ed.focus();
       toTop();
     }
     function clearEditor() {
+      if (libSheet) libSheet.close();
+      if (isPhone()) setPane('query');
       const kept = keepCurrent();
       ed.value = '';
       sc().text = '';
@@ -370,7 +478,7 @@ ORDER BY o.bucket;`;
       p.replaceChildren();
       tabLabel.history.textContent = sc().history.length || '';
       if (!sc().history.length) {
-        p.append(el('p', { class: 'sp-none', text: 'Your last ' + HISTORY_MAX + ' queries appear here after you run them. Click one to put it back in the editor.' }));
+        p.append(el('p', { class: 'sp-none', text: 'Your last ' + HISTORY_MAX + ' queries appear here after you run them. ' + tapWord() + ' one to put it back in the editor.' }));
         return;
       }
       p.append(el('div', { class: 'sp-panel-h' },
@@ -473,6 +581,8 @@ ORDER BY o.bucket;`;
       return list;
     }
     function insertCode(text) {
+      /* A tapped column goes straight into the query, and the Query pane shows it landing there. */
+      if (isPhone()) setPane('query');
       ed.insert(text);
       if (!UI.coarse()) ed.focus();
       UI.announce('Put ' + text.replace(/\s+/g, ' ') + ' in your query.');
@@ -558,7 +668,7 @@ ORDER BY o.bucket;`;
 
     panels.tables.append(
       refFind,
-      el('p', { class: 'sp-hint', text: 'Click a column to put it in your query.' }),
+      el('p', { class: 'sp-hint', text: tapWord() + ' a column to put it in your query.' }),
       refNone,
       refList,
       el('section', { class: 'sp-links', 'aria-labelledby': 'sp-links-h' },
@@ -608,6 +718,8 @@ ORDER BY o.bucket;`;
       UI.announce('');
       out.replaceChildren(el('div', { class: 'sp-idle' }, el('p', { text: 'Press Run and the result prints here.' })));
       out.classList.remove('stack');
+      clearSlip();
+      setHasResult(false);
     }
     /* The slip points at the marked word, wherever the editor has scrolled it. */
     function pointerAt(slip) {
@@ -618,7 +730,7 @@ ORDER BY o.bucket;`;
     }
     function claudeButton(outcome, sql) {
       return el('button', {
-        type: 'button', class: 'tlink', text: 'Copy for Claude',
+        type: 'button', class: 'tlink', text: 'Copy for AI',
         onClick: () => UI.copyForClaude({ kind: 'scratch', sql, outcome })
       });
     }
@@ -642,8 +754,12 @@ ORDER BY o.bucket;`;
             State.commit();
             setExample(next === SAMPLE);
             ready();
-            out.replaceChildren(el('div', { class: 'sp-idle' }, el('p', { text: 'Changed. Press Run to try it.' })));
-            runBtn.focus();
+            clearSlip();
+            if (isPhone()) barRun.focus();
+            else {
+              out.replaceChildren(el('div', { class: 'sp-idle' }, el('p', { text: 'Changed. Press Run to try it.' })));
+              runBtn.focus();
+            }
             wantColumn = null;
             renderTables();
           }
@@ -653,7 +769,7 @@ ORDER BY o.bucket;`;
       slip.append(acts);
       if (info.note) slip.append(el('p', { class: 'help-sub' }, UI.rich(info.note, { inline: true })));
       slip.append(el('p', { class: 'help-raw', text: 'The database said: ' + raw }));
-      out.replaceChildren(slip);
+      putSlip(slip);
       status('help', 'One word to fix');
       if (info.token) { ed.markError(info.token); pointerAt(slip); }
       if (info.useColumn) {
@@ -722,6 +838,7 @@ ORDER BY o.bucket;`;
       if (o.append) out.append(...nodes);
       else out.replaceChildren(...nodes);
       out.classList.toggle('stack', out.children.length > 1);
+      if (out.children.length) setHasResult(true);
       return summary;
     }
 
@@ -740,15 +857,21 @@ ORDER BY o.bucket;`;
       ed.clearError();
       clearTimeout(saveTimer);
       sc().text = sql;
+      clearSlip();
+      /* Before Run: on a phone the note sits above the editor, because that is what it talks about. */
+      const noteFirst = (text) => {
+        if (isPhone()) putSlip(el('div', { class: 'helpslip sp-slip sp-note' }, el('p', { text })));
+        else out.replaceChildren(el('div', { class: 'sp-idle' }, el('p', { text })));
+      };
       if (KenariCheck.isEmptySql(sql)) {
         status(null, 'Write a query, then press Run');
-        out.replaceChildren(el('div', { class: 'sp-idle' }, el('p', { text: 'The editor is empty. Write a query, or use Load the example, then press Run.' })));
+        noteFirst('The editor is empty. Write a query, or use Load the example, then press Run.');
         ed.focus();
         return;
       }
       if (KenariCheck.hasBlanks(sql)) {
         status('todo', 'Fill the yellow boxes, then press Run');
-        out.replaceChildren(el('div', { class: 'sp-idle' }, el('p', { text: 'The yellow boxes are waiting for you. Your cursor is in the first one.' })));
+        noteFirst('The yellow boxes are waiting for you. Your cursor is in the first one.');
         ed.selectFirstBlank();
         return;
       }
@@ -774,7 +897,7 @@ ORDER BY o.bucket;`;
         status(null, n > 1 ? n + ' results, last one ' + rowsWord(r.results[n - 1].rows.length) : n === 1 ? rowsWord(r.results[0].rows.length) : 'Done', note);
         UI.announce(n ? 'Query ran. ' + summary + '.' : 'Query ran. ' + UI.plainOf(K.describeChange(r.actions, { throwaway: false }) || 'No table came back.'));
         if (r.changed != null) loadPractice();
-        if (matchMedia('(max-width:999px)').matches && !o.silent) out.scrollIntoView({ block: 'start', behavior: UI.motionOK() ? 'smooth' : 'auto' });
+        if (isPhone() && !o.silent) { setPane('result'); UI.announce('Result'); }
       } catch (e) {
         if (!o.silent) State.bumpQueries();
         if (e && e.type === 'sql') {
@@ -793,7 +916,7 @@ ORDER BY o.bucket;`;
           /* The restart emptied the practice copy, so the kept runs go back on it now. */
           if (kept) loadPractice();
           status('help', 'Stopped after 8 seconds');
-          out.replaceChildren(el('div', { class: 'helpslip sp-slip' },
+          putSlip(el('div', { class: 'helpslip sp-slip' },
             el('h3', { text: 'That query took too long' }),
             UI.rich('That query was still running after 8 seconds, so I stopped it. The usual cause is a <code>JOIN</code> with no <code>ON</code>. Your query is still in the editor.'),
             kept ? el('p', { class: 'help-sub', text: 'The database had to restart, and your earlier changes to the practice copy are back in place.' }) : null,
@@ -815,7 +938,7 @@ ORDER BY o.bucket;`;
           Engine.ready.then(() => { if (alive) run({ silent: isExample }); }).catch((err) => { if (alive) showEngineTrouble(err && err.message); });
         }
       });
-      out.replaceChildren(el('div', { class: 'helpslip sp-slip' },
+      putSlip(el('div', { class: 'helpslip sp-slip' },
         el('h3', { text: 'The database could not start' }),
         el('p', { text: message || 'The database engine could not load. Your queries are safe in this browser. Check the connection, then try again.' }),
         el('div', { class: 'help-act' }, Engine.status === 'failed' ? retry : null)));
@@ -851,28 +974,24 @@ ORDER BY o.bucket;`;
       UI.toast('Practice data reset. Everything is back to how it came.');
     }
 
-    /* ---------- Phone: bottom bar stays above the keyboard ---------- */
+    /* ---------- Toasts clear the bottom bars, and the screen follows a change of width ---------- */
     const root = document.documentElement;
-    /* The editor's key bar rides above this bar, which rides above the keyboard. Wide screens have no bar. */
-    const liftKeybar = () => {
-      const h = getComputedStyle(bar).display === 'none' ? 0 : bar.offsetHeight;
-      root.style.setProperty('--ed-bar-lift', h + 'px');
-      root.style.setProperty('--toast-lift', (h ? h + 8 : 0) + 'px');
+    const liftToast = () => {
+      const phone = isPhone();
+      const h = phone && getComputedStyle(bar).display !== 'none' ? bar.offsetHeight : 0;
+      root.style.setProperty('--toast-lift', (phone ? h + 64 : 0) + 'px');
     };
-    liftKeybar();
-    window.addEventListener('resize', liftKeybar);
-    const vv = window.visualViewport;
-    const placeBar = () => {
-      if (!vv) return;
-      const lift = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      bar.style.setProperty('--kb', lift + 'px');
+    root.style.setProperty('--ed-bar-lift', '0px');
+    liftToast();
+    window.addEventListener('resize', liftToast);
+    const wideQuery = matchMedia('(min-width:1000px)');
+    const onWidthChange = () => {
+      if (libSheet) libSheet.close();
+      applyLayout();
+      switchTab(lastTab);
+      ed.refresh();
     };
-    if (vv) { vv.addEventListener('resize', placeBar); vv.addEventListener('scroll', placeBar); placeBar(); }
-    let io = null;
-    if (window.IntersectionObserver) {
-      io = new IntersectionObserver((entries) => { backBtn.hidden = entries[0].isIntersecting; }, { rootMargin: '-40px 0px -80px 0px' });
-      io.observe(consoleBox);
-    }
+    wideQuery.addEventListener('change', onWidthChange);
 
     /* ---------- Warming up ---------- */
     const offStatus = Engine.onStatus((s) => {
@@ -883,6 +1002,9 @@ ORDER BY o.bucket;`;
 
     /* ---------- Open ---------- */
     syncPractice().catch(() => { /* the engine is not up yet. The next query says so if it stays down. */ });
+    applyLayout();
+    setPane('query');
+    setHasResult(false);
     paintPractice();
     setExample(isExample);
     renderHistory();
@@ -912,9 +1034,8 @@ ORDER BY o.bucket;`;
       offStatus();
       root.style.removeProperty('--toast-lift');
       root.style.removeProperty('--ed-bar-lift');
-      window.removeEventListener('resize', liftKeybar);
-      if (vv) { vv.removeEventListener('resize', placeBar); vv.removeEventListener('scroll', placeBar); }
-      if (io) io.disconnect();
+      window.removeEventListener('resize', liftToast);
+      wideQuery.removeEventListener('change', onWidthChange);
       ed.destroy();
     };
   }

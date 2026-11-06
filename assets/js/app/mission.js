@@ -3,7 +3,11 @@
  *
  * Desktop: two panes, each scrolling on its own. The right pane is a stage over a docked console.
  * Everything the database says back rises out of the console as paper and covers the stage, so
- * nothing shifts. Phone: one column, the same parts, with the key row as a bottom bar.
+ * nothing shifts.
+ *
+ * Phone (below 1000px, see docs/PHONE.md): an app, not a page. One locked screen with a mission bar,
+ * Learn | Task | Result tabs, one step at a time, and a fixed bottom bar with one main action. The same
+ * parts are used. root.dataset.step says which step shows, and mission.css does the rest.
  *
  * Kenari.Mission.mount(container, lesson, {mode:'learn'|'review', onDone, onNext, nextLabel}) -> cleanup
  *   learn:  onDone({ok:true, firstTime, levelCleared, lesson}) fires as the stamp lands.
@@ -124,7 +128,18 @@
   }
   const mentionsBlank = (text) => /\bblanks?\b/i.test(text);
 
+  /* The request on one line: a table or a list waits behind Read all. */
+  const oneLine = (html) => String(html || '').replace(/<table[\s\S]*?<\/table>/gi, ' ').replace(/<\/?(p|ul|ol|li|div|br)\b[^>]*>/gi, ' ').replace(/\s+/g, ' ').trim();
+
   /* ---------- Mount ---------- */
+  /* Below 1000px: the last few passes of this visit, so Back from the Cheat sheet does not lose what was earned. */
+  const lastPass = new Map();
+  function keepPass(id, p) {
+    lastPass.delete(id);
+    lastPass.set(id, p);
+    if (lastPass.size > 4) lastPass.delete(lastPass.keys().next().value);
+  }
+
   function mount(container, lesson, opts) {
     const { UI, State, Engine } = K;
     const el = UI.el;
@@ -137,8 +152,10 @@
     const level = lesson.level;
     /* In review a starter with blanks goes away. One with none stays, because its request leans on it ("Both steps are ready in the editor"). */
     const blanksGone = review && type !== 'fix' && KenariCheck.hasBlanks(lesson.starter || '');
-    const taskHtml = blanksGone ? reviewTask(lesson.task) : lesson.task;
-    const hints = blanksGone ? (lesson.hints || []).filter((h) => !mentionsBlank(h)) : (lesson.hints || []);
+    /* lesson.phone: [from, to] pairs for sentences that describe the laptop layout. Below 1000px they say what is on this screen. */
+    const wording = (text) => (!isWide() && lesson.phone && typeof text === 'string' ? lesson.phone.reduce((t, [a, b]) => t.replace(a, b), text) : text);
+    const taskHtml = wording(blanksGone ? reviewTask(lesson.task) : lesson.task);
+    const hints = (blanksGone ? (lesson.hints || []).filter((h) => !mentionsBlank(h)) : (lesson.hints || [])).map(wording);
     const showHints = !isExam && !isQuiz && (hints.length > 0 || (blanksGone && !!lesson.solution));
     const coarse = UI.coarse();
 
@@ -157,7 +174,8 @@
       ledgers: [],
       sheet: null,
       slip: null,
-      lowered: false
+      lowered: false,
+      litColumn: null
     };
     const cleanups = [];
     const onCleanup = (fn) => cleanups.push(fn);
@@ -168,7 +186,15 @@
     const saved = review ? null : State.lesson(lesson.id).draft;
     const startText = saved != null ? saved : starter;
 
-    const root = el('section', { class: 'ms' + (review ? ' is-review' : ''), 'data-type': type, 'data-bar': 'read', 'aria-label': 'Mission ' + lesson.id });
+    /* The phone's steps. A fresh mission opens on Learn. A draft, a cleared mission or a review opens on Task. */
+    const steps = review ? ['task', 'result'] : isQuiz ? ['learn', 'task'] : ['learn', 'task', 'result'];
+    const stepLabel = { learn: isExam ? 'Brief' : 'Learn', task: isQuiz ? 'Question' : 'Task', result: 'Result' };
+    S.step = review || saved != null || State.isDone(lesson.id) ? 'task' : 'learn';
+    /* Below 1000px a pass from earlier in this visit is still here: its printout, its stamp and its Next. */
+    const restored = !review && !isQuiz && !isWide() && State.isDone(lesson.id) ? lastPass.get(lesson.id) : null;
+    if (restored) S.step = 'result';
+
+    const root = el('section', { class: 'ms' + (review ? ' is-review' : ''), 'data-type': type, 'data-step': S.step, 'aria-label': 'Mission ' + lesson.id });
     if (isExam) root.classList.add('is-exam');
     if (isQuiz) root.classList.add('is-quiz');
 
@@ -224,22 +250,119 @@
           el('span', { class: 'ms-postitle', text: l.title }),
           l.id === lesson.id ? el('em', { text: 'You are here' }) : null))));
       const sheet = UI.sheet({ title: 'Level ' + level.n + ', ' + level.title, body: list });
-      list.addEventListener('click', (e) => { if (e.target.closest('a')) sheet.close(); });
+      list.addEventListener('click', (e) => {
+        const a = e.target.closest('a');
+        if (!a) return;
+        if (a.classList.contains('cur')) e.preventDefault();
+        sheet.close();
+      });
       const cur = list.querySelector('.cur');
       if (cur) cur.scrollIntoView({ block: 'center' });
     }
 
+    /* ---------- Phone: the mission bar and the step tabs ---------- */
+    let saldoEl = null;
+    function buildMissionBar() {
+      const idx = level.lessons.indexOf(lesson);
+      saldoEl = el('b', { text: State.doneCount() });
+      return el('div', { class: 'ms-mbar' },
+        el('div', { class: 'ms-mbar-row' },
+          el('a', { href: '#/journey', class: 'ms-back', 'aria-label': 'Back to the journey', html: UI.icons.left }),
+          el('h1', { class: 'ms-mhead' },
+            el('button', {
+              type: 'button', class: 'ms-mtitle', 'aria-haspopup': 'dialog',
+              'aria-label': 'Mission ' + lesson.id + ', ' + lesson.title + '. See every mission in level ' + level.n,
+              onClick: openPositionSheet
+            }, el('span', { class: 'ms-mid', text: lesson.id }), el('span', { class: 'ms-mname', text: lesson.title }), el('span', { class: 'ms-mdown', html: UI.icons.down }))),
+          el('a', { href: '#/passbook', class: 'ms-saldo', 'aria-label': 'Saldo. Open the passbook.' }, el('small', { text: 'Saldo' }), saldoEl)),
+        el('span', { class: 'ms-mprog', style: { '--p': ((idx + 1) / level.lessons.length * 100) + '%' } }));
+    }
+    function tickSaldo() {
+      if (!saldoEl) return;
+      const n = State.doneCount();
+      if (String(n) === saldoEl.textContent) return;
+      saldoEl.textContent = n;
+      UI.anim(saldoEl, [{ transform: 'translateY(-70%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(.2,.7,.3,1)' });
+    }
+
+    const tabs = {};
+    function buildSegs() {
+      const bar = el('div', { class: 'ms-segs', role: 'tablist', 'aria-label': 'Steps of this mission' });
+      steps.forEach((st) => {
+        tabs[st] = el('button', {
+          type: 'button', class: 'ms-seg', role: 'tab', id: 'ms-tab-' + st, tabindex: '-1',
+          'aria-selected': 'false', 'aria-controls': st === 'learn' ? 'ms-panel-learn' : 'ms-panel-do',
+          text: stepLabel[st],
+          onClick: () => { setStep(st); UI.announce(stepLabel[st] + ' step'); }
+        });
+        bar.append(tabs[st]);
+      });
+      /* Arrow keys move between tabs that can open, as a tablist should. */
+      bar.addEventListener('keydown', (e) => {
+        const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!dir) return;
+        e.preventDefault();
+        const open = steps.filter((st) => !tabs[st].disabled);
+        const to = open[(open.indexOf(S.step) + dir + open.length) % open.length];
+        setStep(to);
+        tabs[to].focus();
+      });
+      return bar;
+    }
+    function paintSegs() {
+      steps.forEach((st) => {
+        const t = tabs[st];
+        if (!t) return;
+        t.setAttribute('aria-selected', String(st === S.step));
+        t.tabIndex = st === S.step ? 0 : -1;
+        if (st === 'result') t.disabled = !S.sheet;
+      });
+    }
+
+    /* Which step shows. Only mission.css below 1000px reads data-step, so this changes nothing on a laptop. */
+    function setStep(st) {
+      if (!steps.includes(st)) return;
+      const from = S.step;
+      S.step = st;
+      root.dataset.step = st;
+      paintSegs();
+      if (isWide()) return;
+      doPane.setAttribute('aria-labelledby', 'ms-tab-' + (st === 'learn' ? 'task' : st));
+      closeCopyMenus();
+      if (st !== from) {
+        const pane = st === 'learn' ? learnPane : st === 'result' ? tray : doPane;
+        const dir = steps.indexOf(st) > steps.indexOf(from) ? 1 : -1;
+        if (pane) UI.anim(pane, [{ transform: 'translateX(' + (dir * 30) + 'px)', opacity: 0.4 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 170, easing: 'cubic-bezier(.2,.7,.3,1)' });
+      }
+      if (st !== 'task') setReqOpen(false);
+      if (st === 'task' && ed) {
+        ed.refresh();
+        /* The query opens at its top. The caret comes into view when the learner is in the editor. */
+        if (edHost.contains(document.activeElement)) ed.revealCaret();
+        else { const box = edHost.querySelector('.ed-scroll'); if (box) box.scrollTop = 0; }
+      }
+      if (st === 'task') requestAnimationFrame(clampRequest);
+      if (st === 'result' && S.sheet && S.sheet.pin) requestAnimationFrame(() => S.sheet.pin.checkOverflow());
+      if (st === 'result' && S.sheet && S.sheet.checkBand) requestAnimationFrame(S.sheet.checkBand);
+    }
+
+    /* Try it: on a touch screen the keyboard stays down until the learner taps the editor. */
+    function goToWork() {
+      setStep('task');
+      UI.announce(stepLabel.task + ' step');
+      if (!coarse && ed) { if (!ed.selectFirstBlank({ focus: true })) ed.focus(); return; }
+      doPane.focus({ preventScroll: true });
+    }
+    /* Edit query: the learner asked to type, so the cursor goes in the editor and the keyboard comes up. */
+    function editQuery() {
+      setStep('task');
+      if (isOrder) { const f = tileBox.querySelector('button:not([hidden])') || builtBox.querySelector('button'); if (f) f.focus({ preventScroll: true }); return; }
+      if (ed && !ed.selectFirstBlank({ focus: true })) ed.focus();
+    }
+
     function buildLearn() {
       const prog = State.levelProgress(level.n);
-      const idx = level.lessons.indexOf(lesson);
       const earned = (State.stamps() || []).some((s) => s.n === level.n);
-
-      const posbar = el('div', { class: 'ms-posbar' },
-        el('button', { type: 'button', class: 'ms-pos', 'aria-haspopup': 'dialog', onClick: openPositionSheet },
-          el('span', { class: 'ms-pos-t' }, el('b', { text: 'Mission ' + (idx + 1) + ' of ' + level.lessons.length }), el('span', { text: ', Level ' + level.n })),
-          el('span', { class: 'ms-pos-bar', style: { '--p': ((idx + 1) / level.lessons.length * 100) + '%' } })),
-        navLink(K.prevLesson(lesson.id), 'prev'),
-        navLink(next, 'next'));
 
       const where = el('div', { class: 'ms-where' },
         el('div', { class: 'ms-where-t' },
@@ -260,7 +383,7 @@
           UI.rich(lesson.newIdea)),
         el('div', { class: 'weave rev' }, el('i')));
 
-      const parts = [posbar, where, dotsNav(), head, idea, el('div', { class: 'ms-teach' }, UI.rich(lesson.teach))];
+      const parts = [where, dotsNav(), head, idea, el('div', { class: 'ms-teach' }, UI.rich(wording(lesson.teach)))];
 
       if (lesson.ex && lesson.ex.length) parts.push(buildExample());
 
@@ -276,7 +399,7 @@
       }
 
       const glHost = el('div', { class: 'gl', 'aria-hidden': 'true' });
-      const pane = el('div', { class: 'ms-learn' }, glHost, el('div', { class: 'ms-learn-in' }, parts));
+      const pane = el('div', { class: 'ms-learn', id: 'ms-panel-learn' }, glHost, el('div', { class: 'ms-learn-in' }, parts));
       if (isWide()) {
         const g = UI.guilloche(glHost, 620, { k: 0.75 });
         onCleanup(() => g.destroy());
@@ -290,9 +413,20 @@
         el('code', { class: 'ms-ex-sql', html: UI.hl(x[0]) }),
         x[1] ? el('div', { class: 'ms-ex-en' }, el('span', { html: UI.icons.hook }), UI.rich(x[1], { inline: true })) : null)));
       const feed = el('div', { class: 'ms-ex-feed' });
+      /* On a phone the result waits behind this toggle, so the reading stays short. */
+      const feedCount = el('span', { class: 'ms-ex-tn' });
+      const feedToggle = el('button', {
+        type: 'button', class: 'ms-ex-t', 'aria-expanded': 'false', hidden: !!lesson.exNoResult,
+        onClick: () => {
+          const open = feedToggle.getAttribute('aria-expanded') !== 'true';
+          feedToggle.setAttribute('aria-expanded', String(open));
+          feed.classList.toggle('open', open);
+        }
+      }, el('span', { text: 'See its result' }), feedCount, el('span', { class: 'ms-ex-ti', html: UI.icons.down }));
       const box = el('section', { class: 'ms-ex' },
         el('h2', { class: 'ms-sub', text: 'An example, line by line' }),
         el('div', { class: 'mc ms-ex-mc' }, lines),
+        feedToggle,
         feed,
         lesson.exNote ? el('div', { class: 'ms-ex-note' }, UI.rich(lesson.exNote)) : null);
       if (!lesson.exNoResult) {
@@ -302,7 +436,8 @@
           Engine.run(sql, { db: 'fresh' }).then((r) => {
             if (S.disposed) return;
             const last = r.results[r.results.length - 1];
-            if (!last) { feed.replaceChildren(); return; }
+            if (!last) { feed.replaceChildren(); feedToggle.hidden = true; return; }
+            feedCount.textContent = last.rows.length === 1 ? '1 row' : last.rows.length.toLocaleString('en-US') + ' rows';
             feed.replaceChildren(UI.ledger(last, { compact: true, copy: false, title: 'Its real result', label: 'Result of the example' }));
           }, (e) => {
             if (S.disposed) return;
@@ -338,7 +473,7 @@
 
       const hasTarget = !isExam && !lesson.noTarget && !!lesson.solution;
       if (hasTarget) {
-        const open = level.n <= 3;
+        const open = isWide() && level.n <= 3;
         stubBox = el('div', { class: 'tk-stub' });
         const body = el('div', { class: 'ms-stub-b' }, el('p', { class: 'ms-wait', text: 'Warming up the database' }));
         const tgl = el('button', {
@@ -352,6 +487,7 @@
             if (now) paintStub();
           }
         });
+        S.stubToggle = tgl;
         body.hidden = !open;
         ticket.classList.toggle('stub-open', open);
         stubBox.append(tgl, body);
@@ -393,8 +529,11 @@
           const ta = edHost.querySelector('textarea');
           const onBlank = ta && /^_{3,}$/.test(ta.value.slice(ta.selectionStart, ta.selectionEnd));
           if (!onBlank && !S.markedWord && ed.hasBlanks && ed.hasBlanks()) ed.selectFirstBlank({ focus: !coarse });
-          ed.insert(col);
+          const wide = isWide();
+          ed.insert(col, wide || onBlank ? undefined : { list: true });
           if (afterInsert) afterInsert();
+          /* On a phone, with no blank to go to, the learner goes back to typing right after the new word. */
+          if (!wide && !ed.hasBlanks()) ed.focus();
         }
       }, inner);
     }
@@ -469,12 +608,17 @@
         const tag = c.querySelector('.use-this');
         if (tag) tag.remove();
       });
+      S.litColumn = null;
+      if (tablesChip) tablesChip.classList.remove('has-lit');
     }
     function findColumnEl(name) {
       return root.querySelector('.ms-tables .col[data-col="' + CSS.escape(name) + '"]');
     }
     function lightColumn(name) {
       if (!name) return;
+      /* On a phone the column lights up when the Tables sheet opens, and the chip says there is something to see. */
+      S.litColumn = name;
+      if (tablesChip) tablesChip.classList.add('has-lit');
       let col = findColumnEl(name);
       if (!col && tablesBody) {
         const t = KenariData.SCHEMA.find((x) => x.c.some((c) => c[0] === name));
@@ -496,6 +640,78 @@
           S.scrolledForLit = below > 0 || above > 0;
         });
       }
+    }
+
+    /* ---------- Phone: the two chips and the Tables sheet ---------- */
+    let tablesChip = null, targetChip = null;
+    function buildChips() {
+      const row = el('div', { class: 'ms-chips' });
+      if (S.stubToggle) {
+        targetChip = el('button', {
+          type: 'button', class: 'ms-chip', 'aria-expanded': String(S.stubToggle.getAttribute('aria-expanded') === 'true'),
+          onClick: () => {
+            S.stubToggle.click();
+            const open = S.stubToggle.getAttribute('aria-expanded') === 'true';
+            targetChip.setAttribute('aria-expanded', String(open));
+            upper.classList.toggle('target-open', open);
+            clampRequest();
+            if (open) requestAnimationFrame(() => { upper.scrollTop = stubBox.offsetTop; });
+          }
+        }, el('span', { text: 'Target' }), el('span', { class: 'ms-chip-i', html: UI.icons.down }));
+        row.append(targetChip);
+      }
+      tablesChip = el('button', {
+        type: 'button', class: 'ms-chip', 'aria-haspopup': 'dialog', onClick: openTablesSheet
+      }, el('i', { class: 'ms-chip-dot', 'aria-hidden': 'true' }), el('span', { text: 'Tables' }), el('span', { class: 'ms-chip-i', html: UI.icons.up }));
+      row.append(tablesChip);
+      return row;
+    }
+
+    function openTablesSheet() {
+      const used = isExam ? [] : tablesIn(lesson.solution);
+      const lit = S.litColumn;
+      let showAll = !used.length;
+      let sheet = null;
+      const body = el('div', { class: 'ms-tsheet' });
+      const paint = () => {
+        const list = showAll ? KenariData.SCHEMA.slice() : used.slice();
+        /* The column to use lights up even if its table is not one of the mission's own. */
+        if (lit && !list.some((t) => t.c.some((c) => c[0] === lit))) {
+          const t = KenariData.SCHEMA.find((x) => x.c.some((c) => c[0] === lit));
+          if (t) list.push(t);
+        }
+        body.replaceChildren();
+        if (!isOrder) body.append(el('p', { class: 'ms-tsheet-l', text: 'Tap a column to put it in your query.' }));
+        list.forEach((t) => body.append(tableBlock(t, () => sheet && sheet.close())));
+        if (showAll) {
+          body.append(el('h3', { text: 'How the tables connect' }),
+            el('ul', { class: 'ms-links' }, KenariData.LINKS.map((x) => el('li', {}, el('code', { text: x })))));
+        }
+        if (used.length) {
+          body.append(el('button', {
+            type: 'button', class: 'plain ms-tsheet-all', text: showAll ? 'Show only the tables you need' : 'All tables',
+            onClick: () => {
+              showAll = !showAll;
+              const title = sheet.el.querySelector('.dlg-h h2');
+              if (title) title.textContent = showAll ? 'All tables' : 'Tables you need';
+              paint();
+              body.closest('.dlg-b').scrollTop = 0;
+            }
+          }));
+        }
+        hintsBox.querySelectorAll('.ms-hint code').forEach((c) => {
+          const col = body.querySelector('.col[data-col="' + CSS.escape(c.textContent.trim()) + '"]');
+          if (col) col.classList.add('hinted');
+        });
+        const want = lit && body.querySelector('.col[data-col="' + CSS.escape(lit) + '"]');
+        if (want) {
+          want.classList.add('want');
+          want.append(el('span', { class: 'use-this', text: 'Use this one' }));
+          requestAnimationFrame(() => want.scrollIntoView({ block: 'center' }));
+        }
+      };
+      sheet = UI.sheet({ title: showAll ? 'All tables' : 'Tables you need', body });
+      paint();
     }
 
     /* Quiz */
@@ -549,6 +765,7 @@
         if (!review) State.recordAttempt(lesson.id, { state: 'fail' });
         setStatus('Not that one. Read why, then choose again', 'help');
         UI.announce('Not that one. ' + UI.plainOf(pick.c.why));
+        if (!isWide()) pick.card.scrollIntoView({ block: 'nearest' });
         return;
       }
       pick.card.classList.add('is-right');
@@ -604,6 +821,7 @@
     }
     function afterTiles() {
       if (S.phase === 'passed') { S.phase = 'edit'; setRunMode(); }
+      lastPass.delete(lesson.id);
       paintBuilt();
       clearOutput();
       if (!review) State.saveDraft(lesson.id, builtLines.map((x) => x.text).join('\n'));
@@ -628,6 +846,7 @@
         rows.push(el('li', { class: 'ms-line-empty' }, el('span', { class: 'ms-line-n', 'aria-hidden': 'true', text: i + 1 }), el('span', { text: i === builtLines.length ? (coarse ? 'Tap a line above' : 'Click a line above') : '' })));
       }
       builtBox.replaceChildren(el('ol', { class: 'ms-built', 'aria-label': 'Your query' }, rows));
+      if (!isWide()) edBox.scrollTop = edBox.scrollHeight;
     }
     function dropOnBuilt(e) {
       e.preventDefault();
@@ -706,18 +925,23 @@
     }
 
     /* Keys */
-    const jumpBtn = el('button', { type: 'button', class: 'key ms-jump', onClick: jumpToWork, text: isQuiz ? 'Jump to the question' : isOrder ? 'Jump to the query' : 'Jump to the editor' });
+    const tryBtn = el('button', { type: 'button', class: 'key canary big ms-try', onClick: goToWork, text: isQuiz ? 'See the question' : isExam ? 'See the task' : 'Try it' });
+    const editBtn = el('button', { type: 'button', class: 'key canary big ms-edit', onClick: editQuery, text: 'Edit query' });
     const pipsEl = el('span', { class: 'pips', 'aria-hidden': 'true' }, hints.map(() => el('i')));
     const hintBtn = el('button', { type: 'button', class: 'key ms-hintb', onClick: onHint }, 'Hint', pipsEl);
     const overBtn = el('button', { type: 'button', class: 'ghost ms-over', text: 'Start over', onClick: () => startOver() });
-    const overBtn2 = el('button', { type: 'button', class: 'plain ms-over2', text: 'Start over', onClick: () => startOver() });
     const againBtn = el('button', { type: 'button', class: 'ghost ms-again', text: 'Run again', hidden: true, onClick: () => doRun() });
     const modelBtn = el('button', { type: 'button', class: 'ghost ms-model', text: 'See the model answer', hidden: !(isExam && !review && State.isDone(lesson.id)), onClick: openModel });
+    /* Below 1000px a cleared mission keeps a quiet way forward. A laptop has its arrows for this. */
+    const quietNext = review ? null : el('a', {
+      class: 'ghost ms-qnext', href: next ? '#/m/' + next.id : '#/passbook', text: 'Next',
+      'aria-label': next ? 'Next mission: ' + next.id + ' ' + next.title : 'Open your passbook'
+    });
     const enterHint = el('span', { class: 'ms-enter', hidden: true, text: 'Enter to continue' });
     const runLabel = el('span', { class: 'ms-run-l', text: 'Run' });
     const runKbd = el('span', { class: 'kbd', text: UI.runKeys() });
     const runBtn = el('button', { type: 'button', class: 'key canary big ms-run', onClick: onMainKey, 'aria-label': 'Run the query' }, runLabel, runKbd);
-    const keys = el('div', { class: 'mc-act ms-keys' }, jumpBtn, hintBtn, overBtn, againBtn, modelBtn, el('span', { class: 'sp' }), enterHint, runBtn);
+    const keys = el('div', { class: 'mc-act ms-keys' }, tryBtn, editBtn, hintBtn, overBtn, againBtn, modelBtn, quietNext, el('span', { class: 'sp' }), enterHint, runBtn);
 
     function paintHintBtn() {
       const left = hints.length - S.shownHints;
@@ -728,14 +952,37 @@
     function hintNode(i) {
       return el('div', { class: 'ms-hint' }, el('span', { class: 'n', text: i + 1 }), UI.rich(hints[i]));
     }
+    /* Below 1000px the hints slide up as a sheet, so an error slip above them stays whole. The same box
+       moves into the sheet and back, so everything that paints it keeps working. A laptop keeps it in the console. */
+    let hintSheet = null;
+    function setHintsOpen(open) {
+      hintsBox.hidden = !open;
+      if (!open) { if (hintSheet) hintSheet.close(); return; }
+      if (hintSheet || isWide()) return;
+      hintSheet = UI.sheet({
+        title: 'Hints',
+        body: hintsBox,
+        onClose: () => {
+          hintSheet = null;
+          hintsBox.hidden = true;
+          mc.querySelector('.ms-bar').after(hintsBox);
+          fitAll();
+        }
+      });
+      hintSheet.el.classList.add('ms-hintsheet');
+    }
     function paintHints() {
       hintsBox.replaceChildren();
-      const head = el('div', { class: 'ms-hints-h' },
-        el('b', { text: 'Hints' }),
-        el('button', { type: 'button', class: 'plain', text: 'Hide hints', onClick: () => { hintsBox.hidden = true; fitAll(); } }));
-      hintsBox.append(head);
+      const hideBtn = el('button', { type: 'button', class: 'plain', text: 'Hide hints', onClick: () => { setHintsOpen(false); fitAll(); } });
+      hintsBox.append(el('div', { class: 'ms-hints-h' }, el('b', { text: 'Hints' }), hideBtn));
       /* Once the answer is open the hints have done their job, and the answer gets the room. */
       if (!S.answerOpen) for (let i = 0; i < S.shownHints; i++) hintsBox.append(hintNode(i));
+      /* The sheet covers the Hint key, so the next hint is asked for inside it. */
+      let nextBtn = null;
+      if (hintSheet && !S.answerOpen && S.shownHints < hints.length) {
+        nextBtn = el('button', { type: 'button', class: 'plain', text: 'Next hint', onClick: onHint });
+        hintsBox.append(el('div', { class: 'ms-answer' }, nextBtn));
+      }
       if (S.shownHints >= hints.length && lesson.solution) {
         const box = el('div', { class: 'ms-answer' });
         if (S.answerOpen) {
@@ -747,6 +994,9 @@
         hintsBox.append(box);
       }
       lightHinted();
+      /* Repainting removes the focused button, so in the sheet focus moves to Next hint, or to Hide hints when none
+         is left. Never to Show the answer, so pressing Enter again cannot open the answer by accident. */
+      if (hintSheet) (nextBtn || hideBtn).focus({ preventScroll: true });
     }
     function lightHinted() {
       root.querySelectorAll('.col.hinted').forEach((c) => c.classList.remove('hinted'));
@@ -756,8 +1006,11 @@
       });
     }
     function onHint() {
+      /* On a wrong result the Hint key takes the learner back to the editor, where hints open. */
+      if (S.step === 'result' && !isWide()) setStep('task');
+      setReqOpen(false);
       if (hintsBox.hidden && S.shownHints > 0) {
-        hintsBox.hidden = false;
+        setHintsOpen(true);
         paintHints();
         fitAll();
         return;
@@ -765,7 +1018,7 @@
       if (S.shownHints < hints.length) {
         S.shownHints++;
         if (!review) State.useHint(lesson.id);
-        hintsBox.hidden = false;
+        setHintsOpen(true);
         paintHints();
         paintHintBtn();
         fitAll();
@@ -776,7 +1029,7 @@
         }
         return;
       }
-      hintsBox.hidden = !hintsBox.hidden;
+      setHintsOpen(hintsBox.hidden);
       if (!hintsBox.hidden) paintHints();
       fitAll();
     }
@@ -805,13 +1058,15 @@
         S.outcome = null;
         refreshStatus();
       }
-      hintsBox.hidden = true;
+      setHintsOpen(false);
       fitAll();
       runBtn.focus({ preventScroll: true });
     }
 
     function startOver() {
       const before = isOrder ? builtLines.slice() : getSql();
+      setReqOpen(false);
+      lastPass.delete(lesson.id);
       clearOutput();
       closeUnder();
       setRunMode();
@@ -863,11 +1118,9 @@
 
     function pinLine() {
       const who = requester(lesson.from);
-      /* One line only: a table or a list in the request waits behind Read all. */
       const source = String(taskHtml || lesson.question || '');
-      const oneLine = source.replace(/<table[\s\S]*?<\/table>/gi, ' ').replace(/<\/?(p|ul|ol|li|div|br)\b[^>]*>/gi, ' ').replace(/\s+/g, ' ').trim();
       const hasBlocks = /<(table|ul|ol)\b/i.test(source);
-      const text = el('span', { class: 'ms-pin-text' }, who ? el('b', { text: who.name + ': ' }) : null, UI.rich(oneLine, { inline: true }));
+      const text = el('span', { class: 'ms-pin-text' }, who ? el('b', { text: who.name + ': ' }) : null, UI.rich(oneLine(source), { inline: true }));
       const full = hasBlocks ? el('div', { class: 'ms-pin-full', hidden: true }, UI.rich(source)) : null;
       const more = el('button', {
         type: 'button', class: 'tlink ms-pin-more', text: 'Read all', hidden: true,
@@ -880,18 +1133,21 @@
         }
       });
       const lower = el('button', {
-        type: 'button', class: 'tlink ms-pin-low', 'aria-label': isQuiz ? 'See the question' : 'See the ticket',
+        type: 'button', class: 'tlink ms-pin-low',
         onClick: () => setLowered(!S.lowered)
       }, lowerLabel(false));
       const pin = el('div', { class: 'ms-pin' }, text, full, more, lower);
+      /* On a phone the whole line is the target: tap it to read the full request. */
+      pin.addEventListener('click', (e) => {
+        if (isWide() || more.hidden || e.target.closest('a,button,[data-term],.term')) return;
+        more.click();
+      });
       pin.checkOverflow = () => { more.hidden = !hasBlocks && !(text.scrollWidth > text.clientWidth + 1) && !pin.classList.contains('open'); };
       pin.lowerBtn = lower;
       return pin;
     }
     function lowerLabel(lowered) {
-      const long = lowered ? 'Back to the printout' : (isQuiz ? 'See the question' : 'See the ticket');
-      const short = lowered ? 'Printout' : (isQuiz ? 'Question' : 'Ticket');
-      return el('span', { class: 'ms-low-l' }, el('span', { class: 'ms-long', text: long }), el('span', { class: 'ms-short', text: short }));
+      return lowered ? 'Back to the printout' : (isQuiz ? 'See the question' : 'See the ticket');
     }
     function setLowered(v) {
       S.lowered = v;
@@ -902,18 +1158,8 @@
       }
       if (v && S.scrolledForLit) { upper.scrollTop = 0; S.scrolledForLit = false; }
       tray.classList.toggle('lowered', v);
-      tray.querySelectorAll('.ms-pin-low').forEach((b) => {
-        b.replaceChildren(lowerLabel(v));
-        b.setAttribute('aria-label', v ? 'Back to the printout' : (isQuiz ? 'See the question' : 'See the ticket'));
-      });
+      tray.querySelectorAll('.ms-pin-low').forEach((b) => { b.textContent = lowerLabel(v); });
       fitAll();
-      if (!isWide()) {
-        if (v) {
-          const target = isQuiz ? root.querySelector('.ms-q') : ticket;
-          const top = document.getElementById('top');
-          window.scrollTo({ top: target.getBoundingClientRect().top + scrollY - (top ? top.offsetHeight : 52) - 8 });
-        } else placeForPhone();
-      }
     }
 
     function clearOutput() {
@@ -928,6 +1174,9 @@
       tray.classList.remove('lowered', 'has-slip');
       S.lowered = false;
       root.classList.remove('paper-up');
+      if (root.classList.contains('is-passing')) { root.classList.remove('is-passing'); runLabel.textContent = 'Run'; }
+      /* The printout is gone, so its step is too. */
+      if (S.step === 'result') setStep('task'); else paintSegs();
       clearLeader();
       clearLit();
       if (S.scrolledForLit) { upper.scrollTop = 0; S.scrolledForLit = false; }
@@ -947,12 +1196,13 @@
     }
 
     function rise(node) {
+      if (!isWide()) return;
       UI.anim(node, [{ transform: 'translateY(calc(100% + 16px))' }, { transform: 'translateY(0)' }], { duration: 260, easing: 'steps(9,end)' });
     }
 
     function claudeBtn(outcome, sql) {
       return el('button', {
-        type: 'button', class: 'tlink ms-claude', text: 'Copy for Claude',
+        type: 'button', class: 'tlink ms-claude', text: 'Copy for AI',
         onClick: () => UI.copyForClaude({ kind: review ? 'review' : 'mission', lesson, sql, outcome })
       });
     }
@@ -975,6 +1225,31 @@
       return el('div', { class: 'ms-change' }, el('span', { html: UI.icons.shield }), UI.rich(r.changeNote, { inline: true }));
     }
 
+    /* On a phone both copy links fold into a small Copy menu, so the foot keeps one row. */
+    function copyMenu(led) {
+      const links = [...led.foot.querySelectorAll('.tlink')];
+      if (!links.length) return;
+      const menu = el('div', { class: 'ms-copy-m', role: 'menu', hidden: true }, links.map((a) => el('button', {
+        type: 'button', class: 'ms-copy-i', role: 'menuitem', text: a.textContent,
+        onClick: () => { setOpen(false); a.click(); }
+      })));
+      const btn = el('button', { type: 'button', class: 'tlink ms-copy', 'aria-haspopup': 'menu', 'aria-expanded': 'false', text: 'Copy', onClick: () => setOpen(menu.hidden) });
+      const wrap = el('span', { class: 'ms-copy-w' }, btn, menu);
+      const away = (e) => { if (!wrap.contains(e.target)) setOpen(false); };
+      const esc = (e) => { if (e.key === 'Escape') { setOpen(false); btn.focus(); } };
+      function setOpen(open) {
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        document[open ? 'addEventListener' : 'removeEventListener']('pointerdown', away, true);
+        document[open ? 'addEventListener' : 'removeEventListener']('keydown', esc, true);
+      }
+      wrap.closeMenu = () => setOpen(false);
+      led.foot.append(wrap);
+    }
+    function closeCopyMenus() {
+      tray.querySelectorAll('.ms-copy-w').forEach((w) => w.closeMenu());
+    }
+
     /* The sheet: pinned request, verdict band, rows in their own box, foot. */
     function buildSheet(state, bandNode, slot, results, ledgerOpts, footActions) {
       const sheet = el('div', { class: 'paper ms-sheet', 'data-state': state, tabindex: '-1', role: 'group', 'aria-label': 'Printout' });
@@ -988,21 +1263,58 @@
         list.forEach((res, i) => {
           const isLast = i === list.length - 1;
           const led = UI.ledger(res, Object.assign({
-            animate: true,
+            animate: !S.restoring,
             title: list.length > 1 ? 'Result ' + (i + 1) + ' of ' + list.length : undefined,
             label: list.length > 1 ? 'Result ' + (i + 1) + ' of ' + list.length : 'Your result',
             actions: isLast ? footActions : []
           }, isLast ? ledgerOpts : {}));
           S.ledgers.push(led);
+          copyMenu(led);
           box.append(led);
         });
         sheet.append(box);
+        /* On a phone a long verdict scrolls before the rows give up their height, but a short result needs no more than its own rows. */
+        const rows = list[list.length - 1].rows.length;
+        sheet.style.setProperty('--res-min', (list.length > 1 ? 260 : 90 + Math.min(rows, 5) * 30) + 'px');
       } else {
         sheet.append(el('div', { class: 'lg-foot ms-foot0' }, el('span', { class: 'sp' }), footActions));
       }
       sheet.pin = pin;
       sheet.band = band;
+      if (!isWide()) bandMore(sheet);
       return sheet;
+    }
+
+    /* Below 1000px a verdict too long for its band says so: a fade over the last line and a More control. More gives it the rows' height. */
+    function bandMore(sheet) {
+      const band = sheet.band;
+      const label = el('span', { text: 'More' });
+      const icon = el('span', { class: 'ms-band-i', html: UI.icons.down });
+      const btn = el('button', {
+        type: 'button', class: 'tlink ms-band-more', hidden: true, 'aria-expanded': 'false',
+        onClick: () => {
+          const open = !sheet.classList.contains('band-open');
+          sheet.classList.toggle('band-open', open);
+          btn.setAttribute('aria-expanded', String(open));
+          label.textContent = open ? 'Less' : 'More';
+          band.querySelector('.ms-band-t').scrollTop = 0;
+          check();
+        }
+      }, label, icon);
+      band.append(btn);
+      const check = () => {
+        const t = band.querySelector('.ms-band-t');
+        if (!t) return;
+        const open = sheet.classList.contains('band-open');
+        const left = t.scrollHeight - t.clientHeight - t.scrollTop;
+        const over = t.scrollHeight - t.clientHeight > 2;
+        btn.hidden = !open && !(over && left > 2);
+        band.classList.toggle('has-more', !open && over && left > 2);
+      };
+      band.querySelector('.ms-band-t').addEventListener('scroll', check, { passive: true });
+      /* The win text slides in as the stamp lands, and while it moves it reads as taller than it is. */
+      band.addEventListener('animationend', check);
+      sheet.checkBand = check;
     }
 
     function putSheet(sheet) {
@@ -1010,14 +1322,17 @@
       tray.hidden = false;
       S.sheet = sheet;
       root.classList.add('paper-up');
+      if (!isQuiz) setStep('result'); else paintSegs();
+      /* On a phone the slot floats inside the text, so the win text wraps around the stamp and then uses the full width. */
+      if (!isWide() && sheet.dataset.state === 'pass') sheet.band.querySelector('.ms-band-t').prepend(sheet.band.querySelector('.validation'));
       fitAll();
       rise(sheet);
       requestAnimationFrame(() => { if (sheet.pin) sheet.pin.checkOverflow(); });
-      placeForPhone();
     }
 
-    function validationSlot() {
-      return el('div', { class: 'validation' }, el('small', { text: 'Teller validation' }), el('span', { class: 'not-yet', text: 'NOT YET' }));
+    /* The slot says NOT YET only on a real wrong answer. On the way to a pass it waits with its label alone, then takes the stamp. */
+    function validationSlot(forPass) {
+      return el('div', { class: 'validation' }, el('small', { text: 'Teller validation' }), forPass ? null : el('span', { class: 'not-yet', text: 'NOT YET' }));
     }
 
     /* ---------- Wrong answer ---------- */
@@ -1097,7 +1412,6 @@
         pointAtWord(err.token);
       });
       if (err.useColumn) lightColumn(err.useColumn);
-      placeForPhone();
       UI.announce(UI.plainOf(err.title + '. ' + err.plain));
       refreshStatus();
       paintHintBtn();
@@ -1118,12 +1432,9 @@
     function pointAtWord(token) {
       if (!S.slip) return;
       const r = token ? wordRect(token) : null;
+      /* On a phone the status line sits between slip and editor, and the marked word is amber, so no pointer is needed. */
       if (!r || !isWide()) {
-        /* On a phone the slip sits right over the editor, so the pointer still works without the line. */
-        if (r) {
-          const sr0 = S.slip.getBoundingClientRect();
-          S.slip.style.setProperty('--ax', Math.max(14, Math.min(r.left + r.width / 2 - sr0.left, sr0.width - 14)) + 'px');
-        } else S.slip.classList.add('no-ptr');
+        S.slip.classList.add('no-ptr');
         clearLeader();
         return;
       }
@@ -1175,7 +1486,6 @@
       fitAll();
       rise(slip);
       requestAnimationFrame(() => pin.checkOverflow());
-      placeForPhone();
       UI.announce(UI.plainOf(title + '. ' + message));
     }
 
@@ -1192,7 +1502,6 @@
       runBtn.removeAttribute('title');
       root.classList.remove('is-passed');
       paintHintBtn();
-      setBar(lastBar);
     }
 
     function nextLabelText() {
@@ -1214,9 +1523,9 @@
       modelBtn.hidden = true;
       runBtn.setAttribute('aria-label', nextLabelText());
       runBtn.title = nextLabelText();
-      hintsBox.hidden = true;
+      setHintsOpen(false);
       root.classList.add('is-passed');
-      setBar('next');
+      root.classList.remove('is-passing');
       fitAll();
       UI.anim(runBtn, [{ transform: 'perspective(400px) rotateX(-70deg)', opacity: 0.2 }, { transform: 'perspective(400px) rotateX(0)', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(.2,.7,.3,1)' });
       runBtn.focus({ preventScroll: true });
@@ -1246,14 +1555,6 @@
       K.navigate(next ? '#/m/' + next.id : '#/passbook');
     }
 
-    function jumpToWork() {
-      const target = isQuiz ? root.querySelector('.ms-quiz') : mc;
-      target.scrollIntoView({ block: isQuiz ? 'start' : 'end', behavior: UI.motionOK() ? 'smooth' : 'auto' });
-      if (isOrder) { const f = tileBox.querySelector('button:not([hidden])'); if (f) f.focus({ preventScroll: true }); return; }
-      if (isQuiz) { const f = choiceCards[0] && choiceCards[0].btn; if (f) f.focus({ preventScroll: true }); return; }
-      if (ed && !ed.selectFirstBlank({ focus: true })) ed.focus();
-    }
-
     async function doRun() {
       if (S.disposed || isQuiz) return;
       if (S.phase === 'running' || S.phase === 'printing' || S.phase === 'stamping') {
@@ -1263,7 +1564,20 @@
       const sql = getSql();
       const wasPassed = S.phase === 'passed';
       if (coarse && ed && edHost.contains(document.activeElement)) ed.blur();
-      root.classList.remove('ed-focus');
+      root.classList.remove('ed-focus', 'kb-up');
+      setReqOpen(false);
+      /* On a phone a half-built order does not run: the database's complaint would be about lines that are still missing. */
+      if (isOrder && !isWide() && builtLines.length && builtLines.length < (lesson.lines || []).length) {
+        const left = (lesson.lines || []).length - builtLines.length;
+        clearOutput();
+        if (wasPassed) setRunMode();
+        S.phase = 'edit';
+        S.outcome = null;
+        refreshStatus();
+        showUnder(left === 1 ? 'Place the last line, then press Run.' : 'Place the other ' + left + ' lines, then press Run.');
+        return;
+      }
+      lastPass.delete(lesson.id);
       clearOutput();
       if (wasPassed) setRunMode();
       S.editedAfterPass = false;
@@ -1360,12 +1674,17 @@
       S.levelCleared = res.levelCleared || null;
     }
 
+    /* Below 1000px: the slot's own size. A phone on its side has a smaller slot. */
+    function stampSize() {
+      return matchMedia('(max-height:449px)').matches ? 62 : 92;
+    }
+
     function stampSheet(sheet, slot) {
       S.phase = 'stamping';
       slot.classList.add('stamped');
       const sr = slot.getBoundingClientRect();
       const small = !isWide() || sr.width < 130;
-      const size = small ? 92 : 124;
+      const size = !isWide() ? stampSize() : small ? 92 : 124;
       UI.stamp(slot, {
         mission: lesson.id,
         size,
@@ -1375,6 +1694,7 @@
         onImpact: () => {
           if (S.disposed) return;
           if (S.held) { K.Header.release(); S.held = false; }
+          tickSaldo();
           sheet.classList.add('is-stamped');
           lamp.removeAttribute('data-state');
           setStatus('Matches the request');
@@ -1421,10 +1741,13 @@
       /* Focus leaves the editor at once, and the editor is locked until the print ends. */
       /* Setting the value puts the query back at its top-left corner, so the whole shape reads. */
       if (ed) { ed.value = sql; ed.readOnly = true; }
+      root.classList.add('is-passing');
+      if (!isWide()) runLabel.textContent = 'Printing';
       recordPassNow();
       if (!review && !isOrder) State.saveDraft(lesson.id, sql);
+      if (!review && !isWide()) keepPass(lesson.id, { r, sql, keptOf, firstTime: S.firstTime, levelCleared: S.levelCleared, step: 'result' });
 
-      const slot = validationSlot();
+      const slot = validationSlot(true);
       const band = bandText(r.verdict.title || 'You got it', '', passExtras(r));
       const sheet = buildSheet('pass', band, slot, r.results, { kept: keptOf ? { of: keptOf } : undefined }, [claudeBtn(r, sql)]);
       sheet.classList.add('is-landing');
@@ -1439,10 +1762,36 @@
     }
     function onSheetClick() { if (S.phase === 'printing') finishPrint(); }
 
+    /* Coming back to a pass from earlier in this visit: the same printout, already stamped, with no second print and no second record. */
+    function restorePass(p) {
+      S.phase = 'passed';
+      S.firstTime = p.firstTime;
+      S.levelCleared = p.levelCleared;
+      S.editedAfterPass = false;
+      S.restoring = true;
+      const slot = validationSlot(true);
+      const band = bandText(p.r.verdict.title || 'You got it', '', passExtras(p.r));
+      const sheet = buildSheet('pass', band, slot, p.r.results, { kept: p.keptOf ? { of: p.keptOf } : undefined }, [claudeBtn(p.r, p.sql)]);
+      S.restoring = false;
+      putSheet(sheet);
+      slot.classList.add('stamped');
+      const sr = slot.getBoundingClientRect();
+      const size = stampSize();
+      UI.stamp(slot, { mission: lesson.id, size, rot: -11, left: (sr.width - size) / 2, top: (sr.height - size) / 2, still: true, jolt: false, flare: false });
+      sheet.classList.add('is-stamped');
+      lamp.removeAttribute('data-state');
+      setStatus('Matches the request');
+      flipToNext();
+      markTicketClosed(sheet);
+      S.nextAt = 0;
+      if (p.step !== 'result') setStep(p.step);
+    }
+
     function passQuiz(pick) {
       S.phase = 'stamping';
+      root.classList.add('is-passing');
       recordPassNow();
-      const slot = validationSlot();
+      const slot = validationSlot(true);
       const band = bandText('You got it', '', passExtras({}));
       const sheet = buildSheet('pass', band, slot, [], {}, []);
       const foot = sheet.querySelector('.ms-foot0');
@@ -1452,19 +1801,14 @@
       requestAnimationFrame(() => {
         if (!S.disposed) {
           const ur = upper.getBoundingClientRect(), cr = pick.card.getBoundingClientRect();
-          if (isWide()) upper.scrollTop += cr.top - ur.top - 12;
+          upper.scrollTop += cr.top - ur.top - 12;
         }
       });
       setTimeout(() => { if (!S.disposed && S.sheet === sheet) stampSheet(sheet, slot); }, UI.motionOK() ? 260 : 0);
     }
 
     /* ---------- Layout measuring ---------- */
-    let doPane, stage, upper, dock, mc;
-    let lastBar = 'read';
-    function setBar(state) {
-      if (state !== 'next') lastBar = state;
-      root.dataset.bar = root.classList.contains('is-passed') ? 'next' : state;
-    }
+    let doPane, stage, upper, dock, mc, learnPane = null;
 
     function fitAll() {
       if (S.disposed || !doPane) return;
@@ -1477,32 +1821,57 @@
         const trayH = tray.hidden ? 0 : tray.getBoundingClientRect().height;
         root.style.setProperty('--tray-h', (S.lowered ? 44 : trayH) + 'px');
       } else {
-        sizePaperPhone();
+        clampRequest();
+        if (S.sheet && S.sheet.checkBand) S.sheet.checkBand();
       }
       if (S.slip && S.markedWord) pointAtWord(S.markedWord);
     }
 
-    /* On a phone the rows, verdict, editor and Run must all fit on one screen. */
-    function sizePaperPhone() {
-      const vh = (window.visualViewport && visualViewport.height) || innerHeight;
-      const top = document.getElementById('top');
-      const topH = top ? top.offsetHeight : 52;
-      const barH = keys.offsetHeight || 64;
-      const consoleH = dock.offsetHeight;
-      const avail = vh - topH - consoleH - barH - 14;
-      root.style.setProperty('--paper-h', Math.max(236, avail) + 'px');
-      root.style.setProperty('--bar-h', barH + 'px');
-      root.style.setProperty('--stage-h', Math.max(236, avail) + 'px');
+    /* Below 1000px a long request stops at a whole line, with a fade over it and a Read all control. Read all gives it the step. */
+    const reqMore = isQuiz || isOrder ? null : el('button', {
+      type: 'button', class: 'plain ms-req-more', text: 'Read all', hidden: true, 'aria-expanded': 'false',
+      onClick: () => setReqOpen(!doPane.classList.contains('req-open'))
+    });
+    let reqKey = '';
+    function setReqOpen(open) {
+      if (!reqMore || !doPane || open === doPane.classList.contains('req-open')) return;
+      doPane.classList.toggle('req-open', open);
+      reqMore.textContent = open ? 'Read less' : 'Read all';
+      reqMore.setAttribute('aria-expanded', String(open));
+      upper.scrollTop = 0;
+      reqKey = '';
+      clampRequest();
+      if (!open && ed) { ed.refresh(); const box = edHost.querySelector('.ed-scroll'); if (box && !edHost.contains(document.activeElement)) box.scrollTop = 0; }
     }
-    function placeForPhone() {
-      if (isWide()) return;
-      sizePaperPhone();
-      requestAnimationFrame(() => {
-        const top = document.getElementById('top');
-        const topH = top ? top.offsetHeight : 52;
-        const y = tray.getBoundingClientRect().top + scrollY - topH - 6;
-        window.scrollTo({ top: y, behavior: 'auto' });
+    function clampRequest() {
+      if (!reqMore || S.disposed || isWide() || S.step !== 'task') return;
+      const open = doPane.classList.contains('req-open');
+      const skip = open || upper.classList.contains('target-open') || upper.offsetHeight === 0;
+      const key = [doPane.clientWidth, doPane.clientHeight, !!hintsBox.hidden, skip, upper.offsetHeight === 0].join();
+      if (key === reqKey) return;
+      reqKey = key;
+      upper.style.maxHeight = '';
+      upper.classList.remove('is-clamped');
+      if (skip) { reqMore.hidden = !open; return; }
+      reqMore.hidden = true;
+      const cap = upper.clientHeight;
+      const taskEl = upper.querySelector('.tk-task');
+      if (!taskEl || upper.scrollHeight <= cap + 1) return;
+      const lh = parseFloat(getComputedStyle(taskEl).lineHeight) || 23;
+      const top = taskEl.getBoundingClientRect().top - upper.getBoundingClientRect().top + upper.scrollTop;
+      const lines = Math.max(1, Math.floor((cap - top) / lh));
+      upper.scrollTop = 0;
+      /* A table that would show only a sliver waits behind Read all too. */
+      const ur = upper.getBoundingClientRect();
+      let cut = top + lines * lh;
+      taskEl.querySelectorAll('.rich>:not(p)').forEach((n) => {
+        const r = n.getBoundingClientRect();
+        const a = r.top - ur.top, z = r.bottom - ur.top;
+        if (a < cut && z > cut && cut - a < 34 && a > top) cut = a;
       });
+      upper.style.maxHeight = Math.round(cut) + 'px';
+      upper.classList.add('is-clamped');
+      reqMore.hidden = false;
     }
 
     /* ---------- Assemble ---------- */
@@ -1514,8 +1883,16 @@
       if (isOrder) upperParts.push(buildTiles());
       upperParts.push(buildTables());
     }
-    upper = el('div', { class: 'ms-upper', tabindex: '-1' }, el('div', { class: 'ms-upper-in' }, upperParts));
-    stage = el('div', { class: 'ms-stage' }, upper, tray);
+    /* An order mission on a phone keeps its height for the tiles, so its two chips sit after them in the same scroll. */
+    const chipsInScroll = isOrder && !isWide();
+    if (chipsInScroll) upperParts.push(buildChips());
+    upper = el('div', { class: 'ms-upper', tabindex: '-1' }, el('div', { class: 'ms-upper-in' }, upperParts), reqMore);
+    /* With the keyboard up the request folds to one line. Tapping it puts the keyboard away and shows it all. */
+    const reqLine = isQuiz ? null : el('button', {
+      type: 'button', class: 'ms-req1', 'aria-label': 'Read the full request',
+      onClick: () => { if (ed) ed.blur(); root.classList.remove('kb-up'); }
+    }, (requester(lesson.from) ? el('b', { text: requester(lesson.from).name + ': ' }) : null), UI.rich(oneLine(taskHtml), { inline: true }));
+    stage = el('div', { class: 'ms-stage' }, reqLine, upper, isQuiz || chipsInScroll ? null : buildChips(), tray);
 
     if (isOrder) {
       builtBox = el('div', { class: 'ms-builtbox' });
@@ -1525,7 +1902,7 @@
       paintBuilt();
     }
 
-    const barParts = [lamp, statusEl, noteEl, isQuiz ? null : overBtn2];
+    const barParts = [lamp, statusEl, noteEl];
     mc = el('div', { class: 'mc ms-mc' },
       el('div', { class: 'mc-bar ms-bar' }, barParts),
       hintsBox,
@@ -1534,12 +1911,37 @@
       keys,
       el('div', { class: 'slot', 'aria-hidden': 'true' }));
     dock = el('div', { class: 'ms-dock' }, mc);
-    doPane = el('div', { class: 'ms-do' }, stage, dock, leader);
+    doPane = el('div', { class: 'ms-do', id: 'ms-panel-do' }, stage, dock, leader);
 
-    if (!review) root.append(buildLearn());
+    root.append(buildMissionBar(), buildSegs());
+    if (!review) { learnPane = buildLearn(); root.append(learnPane); }
     root.append(doPane);
     container.append(root);
 
+    /* Toasts stay above the bottom bar. */
+    const setLift = () => document.documentElement.style.setProperty('--toast-lift', isWide() ? '0px' : '72px');
+
+    /* The bottom bar lives in the console on a laptop, and under the steps on a phone. Everything else stays in place. */
+    let wideNow = null;
+    function syncLayout() {
+      const wide = isWide();
+      if (wide === wideNow) return;
+      const first = wideNow === null;
+      wideNow = wide;
+      if (wide) {
+        if (!first) mc.insertBefore(keys, mc.querySelector('.slot'));
+        [learnPane, doPane].forEach((p) => { if (p) { p.removeAttribute('role'); p.removeAttribute('tabindex'); p.removeAttribute('aria-labelledby'); } });
+      } else {
+        root.append(keys);
+        if (learnPane) { learnPane.setAttribute('role', 'tabpanel'); learnPane.setAttribute('aria-labelledby', 'ms-tab-learn'); learnPane.tabIndex = -1; }
+        doPane.setAttribute('role', 'tabpanel');
+        doPane.setAttribute('aria-labelledby', 'ms-tab-' + (S.step === 'learn' ? 'task' : S.step));
+        doPane.tabIndex = -1;
+      }
+      setLift();
+    }
+
+    if (!review && State.isDone(lesson.id)) root.classList.add('is-cleared');
     if (isQuiz) { overBtn.hidden = true; modelBtn.hidden = true; noteEl.hidden = true; runBtn.classList.add('ms-run-quiz'); keys.classList.add('ms-keys-quiz'); }
     if (isExam || !showHints) hintBtn.hidden = true;
     if (isOrder) overBtn.hidden = false;
@@ -1554,10 +1956,12 @@
         lines: edLines,
         autocomplete: true,
         keybar: true,
+        runKey: true,
         label: 'SQL editor for mission ' + lesson.id,
         onRun: () => doRun(),
         onInput: (text) => {
           if (!review) State.saveDraft(lesson.id, text);
+          lastPass.delete(lesson.id);
           if (S.phase === 'passed') {
             S.editedAfterPass = true;
             statusEl.textContent = 'Changed since it matched. Run it again to check';
@@ -1577,6 +1981,8 @@
       });
       /* With paper up on a short screen, the editor stays small until the learner goes back to work in it. */
       const working = () => { if (!root.classList.contains('ed-focus')) { root.classList.add('ed-focus'); fitAll(); } };
+      /* On a touch phone, focus in the editor means the keyboard: the request folds and the bottom bar steps aside. */
+      edBox.addEventListener('focusin', () => { S.kbShrunk = false; if (coarse && !isWide()) root.classList.add('kb-up'); });
       edBox.addEventListener('pointerdown', working);
       edBox.addEventListener('input', working);
       edBox.addEventListener('keydown', (e) => { if (!e.ctrlKey && !e.metaKey && e.key !== 'Enter' && e.key !== 'Tab' && e.key !== 'Shift') working(); });
@@ -1585,7 +1991,7 @@
       edBox.addEventListener('focusin', () => clearTimeout(givenBack));
       edBox.addEventListener('focusout', () => {
         clearTimeout(givenBack);
-        givenBack = setTimeout(() => { if (!S.disposed) { root.classList.remove('ed-focus'); fitAll(); } }, 300);
+        givenBack = setTimeout(() => { if (!S.disposed) { root.classList.remove('ed-focus', 'kb-up'); fitAll(); } }, 300);
       });
       onCleanup(() => clearTimeout(givenBack));
     }
@@ -1596,7 +2002,11 @@
     setRunMode();
     if (isQuiz) { overBtn.hidden = true; }
     if (isExam) hintBtn.hidden = true;
+    paintSegs();
+    syncLayout();
     fitAll();
+    if (restored) restorePass(restored);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { reqKey = ''; if (!S.disposed) fitAll(); });
 
     /* ---------- Listeners ---------- */
     const mountedAt = performance.now();
@@ -1632,48 +2042,40 @@
       onCleanup(() => ro.disconnect());
     }
     const onResize = () => {
+      syncLayout();
       fitAll();
       if (ed) ed.refresh();
     };
     window.addEventListener('resize', onResize);
     onCleanup(() => window.removeEventListener('resize', onResize));
 
-    /* The keyboard pushes the bottom bar up on phones. */
-    const vv = window.visualViewport;
-    if (vv) {
-      const onVV = () => {
-        const kb = Math.max(0, innerHeight - vv.height - vv.offsetTop);
-        root.style.setProperty('--kb', Math.round(kb) + 'px');
-        if (!isWide()) sizePaperPhone();
-      };
-      vv.addEventListener('resize', onVV);
-      vv.addEventListener('scroll', onVV);
-      onVV();
-      onCleanup(() => { vv.removeEventListener('resize', onVV); vv.removeEventListener('scroll', onVV); });
-    }
-
-    /* The bottom bar changes with what is on screen. */
-    let io = null;
-    const watchTarget = isQuiz ? root.querySelector('.ms-choices') : mc;
-    if (window.IntersectionObserver) {
-      io = new IntersectionObserver((entries) => {
-        const e = entries[entries.length - 1];
-        setBar(e.isIntersecting ? 'work' : 'read');
-      }, { threshold: isQuiz ? 0.05 : 0.3 });
-      io.observe(watchTarget);
-      onCleanup(() => io.disconnect());
-    } else setBar('work');
-
+    /* The screen is exactly as tall as what can be seen, with or without the keyboard. Some phones shrink the
+       layout for the keyboard and some only shrink the visual viewport, so the step layout follows the visual one. */
     const root0 = document.documentElement;
-    const setLift = () => {
-      root0.style.setProperty('--toast-lift', isWide() ? '0px' : '72px');
-      /* The editor's key bar rides on top of the bottom bar, never over Run. */
-      if (isWide()) root0.style.removeProperty('--ed-bar-lift');
-      else root0.style.setProperty('--ed-bar-lift', (keys.offsetHeight || 64) + 'px');
+    const vv = window.visualViewport;
+    let tallest = 0, lastW = 0;
+    const onViewport = () => {
+      if (isWide()) { root0.style.removeProperty('--vvh'); return; }
+      if (vv && vv.scale > 1.02) return;   /* Pinch zoom is not a smaller screen. */
+      const h = vv ? vv.height : innerHeight;
+      root0.style.setProperty('--vvh', Math.round(h) + 'px');
+      if (scrollY || (vv && vv.offsetTop)) window.scrollTo(0, 0);
+      if (innerWidth !== lastW) { lastW = innerWidth; tallest = h; }
+      tallest = Math.max(tallest, h);
+      /* The keyboard went away but focus stayed, as Android's back key does: leave the editor, and the bottom bar comes back. */
+      if (root.classList.contains('kb-up') || S.kbShrunk) {
+        if (h < tallest - 120) { S.kbShrunk = true; root.classList.add('kb-up'); }
+        else if (S.kbShrunk) { S.kbShrunk = false; if (ed) ed.blur(); root.classList.remove('kb-up'); }
+      }
     };
-    setLift();
-    window.addEventListener('resize', setLift);
-    onCleanup(() => { window.removeEventListener('resize', setLift); root0.style.removeProperty('--toast-lift'); root0.style.removeProperty('--ed-bar-lift'); });
+    if (vv) {
+      vv.addEventListener('resize', onViewport);
+      vv.addEventListener('scroll', onViewport);
+      onCleanup(() => { vv.removeEventListener('resize', onViewport); vv.removeEventListener('scroll', onViewport); });
+    }
+    window.addEventListener('resize', onViewport);
+    onViewport();
+    onCleanup(() => { window.removeEventListener('resize', onViewport); root0.style.removeProperty('--toast-lift'); });
 
     /* The engine: calm while it warms up, honest if it fails */
     const offEngine = Engine.onStatus((st) => {
@@ -1699,6 +2101,8 @@
     });
 
     return function cleanup() {
+      const kept = lastPass.get(lesson.id);
+      if (kept) kept.step = S.step === 'learn' ? 'result' : S.step;
       S.disposed = true;
       if (S.held) { K.Header.release(); S.held = false; }
       cleanups.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });

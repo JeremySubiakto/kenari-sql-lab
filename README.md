@@ -9,7 +9,7 @@ A static website that takes a nervous beginner to professional SQL, for work in 
 - Ten levels and 198 missions, from Day One to SQL Pro.
 - Real SQLite in your browser, through [sql.js](https://sql.js.org) in a Web Worker. A runaway query cannot freeze the page.
 - No account, no backend, no API keys and no analytics. Your progress stays in this browser's `localStorage`, and you can download it as a file and restore it elsewhere.
-- Works on a laptop at the office and on a phone on the way home.
+- Works on a laptop at the office and on a phone on the way home. Below 1000px wide it becomes an app with one thing on screen at a time, described in `docs/PHONE.md`.
 
 The only other hosts it talks to are Google Fonts and the sql.js CDNs (cdnjs, with jsDelivr as a fallback). `claude.ai` opens only if you click that link. If the fonts are blocked, the fallback fonts take over. If the engine is blocked, the lessons stay readable and the page says how to retry.
 
