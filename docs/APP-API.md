@@ -211,7 +211,7 @@ More from `UI`, for screens that need the signature pieces:
 UI.isWide()                  // true at 1000px and wider. Below that, the phone layout.
 UI.motionOK(), UI.coarse(), UI.isMac(), UI.runKeys()   // runKeys: 'Ctrl Enter', or the Command key form on a Mac. Label Run with it.
 UI.whenIdle(fn), UI.anim(el, frames, opts)             // anim plays and then cancels itself, and does nothing under reduced motion
-UI.icons                     // HTML strings: arrow, left, right, down, up, check, hook, shield, pin, close
+UI.icons                     // HTML strings: arrow, left, right, down, up, check, hook, shield, pin, out (opens another site), close
 UI.dm(text, {p, sw})         // dot-matrix HTML string with hidden real text. Pitch p defaults to 3, which is 21px tall. Never go below 20px, and never use it for sentences.
 UI.qd(text, pitch)           // the queue display: the mission plate, as an HTML string
 UI.rosette(n, size)          // level n's rosette as an SVG HTML string, denser as levels rise. Color comes from currentColor.
@@ -313,7 +313,7 @@ Share.rank(level)      // what the button does: navigator.share({files: [png], t
 
 ## Screen modules
 
-Each exports `render(container, params)` returning an optional cleanup function. `main.js` routes `#/`, `#/journey`, `#/passbook`, `#/m/<id>`, `#/review`, `#/scratchpad`, `#/cheatsheet`, `#/about`, and shows a friendly not-found view otherwise. `#/about` is `Kenari.About` in `main.js`: the terms on the back of the passbook, reached from the About and privacy row in Settings. `#/journey` and `#/passbook` render Home and scroll to the element with `id="journey"` or `id="passbook"`, so Home must give those sections these ids. Below 1000px each opens as its own screen, at the top. Moving between them does not rebuild Home. Params: Mission gets `{id, lesson}`, and Home gets `{section}` when there is one.
+Each exports `render(container, params)` returning an optional cleanup function. `main.js` routes `#/`, `#/journey`, `#/passbook`, `#/m/<id>`, `#/review`, `#/scratchpad`, `#/cheatsheet`, `#/about`, and shows a friendly not-found view otherwise. `#/about` is `Kenari.About` in `main.js`: the terms on the back of the passbook, reached from the About and privacy row in Settings. Settings ends with a row of its own, "Made by Jeremy Subiakto" with the `out` arrow (`a.menu-row.menu-made`), which opens his link page (`LINKS_URL` in `main.js`) in a new tab. On the computer the menu closes after the click. The About page's Who made it row links his name to the same page. `#/journey` and `#/passbook` render Home and scroll to the element with `id="journey"` or `id="passbook"`, so Home must give those sections these ids. Below 1000px each opens as its own screen, at the top. Moving between them does not rebuild Home. Params: Mission gets `{id, lesson}`, and Home gets `{section}` when there is one.
 
 `main.js` sets a default title per route, scrolls to the top, and moves focus to `#view` unless the screen already placed focus inside it. Call `UI.setTitle` in `render` for a better title.
 

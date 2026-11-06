@@ -569,6 +569,7 @@
     hook: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 1.5v6.5a2 2 0 0 0 2 2h8M10 7l3 3-3 3"/></svg>',
     shield: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.2l6.5 2.4v5c0 4-2.7 6.8-6.5 8.2-3.8-1.4-6.5-4.2-6.5-8.2v-5z"/><path d="M7 10l2.2 2.2L13.2 8"/></svg>',
     pin: '<svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 11s4-3.7 4-6.6A4 4 0 0 0 2 4.4C2 7.3 6 11 6 11zm0-5.2a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>',
+    out: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>',
     close: CLOSE_ICON
   };
 

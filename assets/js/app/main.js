@@ -217,6 +217,8 @@
 
   /* ---------- About: printed like the terms on the back of a passbook ---------- */
   const REPORT_URL = 'https://github.com/JeremySubiakto/kenari-sql-lab/issues/new?template=problem.md';
+  /* The maker's link page: both labs and his LinkedIn. */
+  const LINKS_URL = 'https://jeremysubiakto.github.io/links/';
   K.About = {
     render(host) {
       const rows = [
@@ -224,7 +226,7 @@
         ['Bank Kenari', 'Bank Kenari is made up. Every bank, branch, customer and colleague here is invented, and none of it stands for a real bank or person.'],
         ['Your privacy', 'Your progress stays in this browser. There is no account, no analytics and no tracking. Your queries stay on your device unless you copy them somewhere yourself.'],
         ['Other services', 'The page loads its fonts from Google Fonts and the SQL engine from cdnjs or jsDelivr. Those hosts see a normal web request, as with any website.'],
-        ['Who made it', 'Made by Jeremy Subiakto.'],
+        ['Who made it', ['Made by ', UI.el('a', { href: LINKS_URL, target: '_blank', rel: 'noopener', text: 'Jeremy Subiakto' }), '.']],
         ['License', 'Code: MIT. Lessons: CC BY-NC 4.0, so share them with credit, but not for sale.'],
         ['Found a problem?', [UI.el('a', { href: REPORT_URL, target: '_blank', rel: 'noopener', text: 'Report it on GitHub' }), '. You need a free GitHub account.']]
       ];
@@ -238,7 +240,12 @@
   };
   /* Already on About, the link changes nothing, so the computer's menu closes by hand. */
   const aboutRow = () => UI.el('a', { class: 'menu-row', href: '#/about', onClick: () => { if (/^#\/about\/?$/.test(location.hash)) closeMenu(true); } }, UI.el('span', { text: 'About and privacy' }));
-  const madeBy = () => UI.el('p', { class: 'menu-made', text: 'Made by Jeremy Subiakto' });
+  /* The credit is a row of its own. It opens the link page in a new tab, and the computer's menu closes behind it
+     once the click has gone through. */
+  const madeBy = () => UI.el('a', {
+    class: 'menu-row menu-made', href: LINKS_URL, target: '_blank', rel: 'noopener',
+    onClick: () => setTimeout(() => { if (menuEl) closeMenu(true); })
+  }, UI.el('span', { text: 'Made by Jeremy Subiakto' }), UI.el('span', { class: 'menu-out', html: UI.icons.out }));
 
   /* ---------- Settings ---------- */
   function downloadProgress() {
@@ -344,15 +351,15 @@
     $('themeBtn').setAttribute('aria-label', 'Switch to the ' + (dark ? 'light' : 'dark') + ' theme');
   }
 
-  /* On a phone, the settings come up as a sheet. The tab bar handles navigation, so only the Passbook and About are linked here. */
+  /* On a phone, the settings come up as a sheet. The tab bar handles navigation, so only the Passbook, About and the maker's page are linked here. */
   function openSettingsSheet() {
     let sheet = null;
     const body = UI.el('div', {},
       UI.el('div', { class: 'sheet-group' }, settingsRows(() => sheet && sheet.close())),
       UI.el('div', { class: 'sheet-group' },
         UI.el('a', { class: 'menu-row', href: '#/passbook' }, UI.el('span', { text: 'Open your passbook' }), UI.el('span', { text: State.doneCount() + ' cleared' })),
-        aboutRow()),
-      madeBy());
+        aboutRow(),
+        madeBy()));
     body.addEventListener('click', (e) => { if (e.target.closest('a')) sheet.close(); });
     sheet = UI.sheet({ title: 'Settings', body });
   }
