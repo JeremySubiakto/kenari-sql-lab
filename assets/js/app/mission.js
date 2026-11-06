@@ -952,14 +952,37 @@
     function hintNode(i) {
       return el('div', { class: 'ms-hint' }, el('span', { class: 'n', text: i + 1 }), UI.rich(hints[i]));
     }
+    /* Below 1000px the hints slide up as a sheet, so an error slip above them stays whole. The same box
+       moves into the sheet and back, so everything that paints it keeps working. A laptop keeps it in the console. */
+    let hintSheet = null;
+    function setHintsOpen(open) {
+      hintsBox.hidden = !open;
+      if (!open) { if (hintSheet) hintSheet.close(); return; }
+      if (hintSheet || isWide()) return;
+      hintSheet = UI.sheet({
+        title: 'Hints',
+        body: hintsBox,
+        onClose: () => {
+          hintSheet = null;
+          hintsBox.hidden = true;
+          mc.querySelector('.ms-bar').after(hintsBox);
+          fitAll();
+        }
+      });
+      hintSheet.el.classList.add('ms-hintsheet');
+    }
     function paintHints() {
       hintsBox.replaceChildren();
-      const head = el('div', { class: 'ms-hints-h' },
-        el('b', { text: 'Hints' }),
-        el('button', { type: 'button', class: 'plain', text: 'Hide hints', onClick: () => { hintsBox.hidden = true; fitAll(); } }));
-      hintsBox.append(head);
+      const hideBtn = el('button', { type: 'button', class: 'plain', text: 'Hide hints', onClick: () => { setHintsOpen(false); fitAll(); } });
+      hintsBox.append(el('div', { class: 'ms-hints-h' }, el('b', { text: 'Hints' }), hideBtn));
       /* Once the answer is open the hints have done their job, and the answer gets the room. */
       if (!S.answerOpen) for (let i = 0; i < S.shownHints; i++) hintsBox.append(hintNode(i));
+      /* The sheet covers the Hint key, so the next hint is asked for inside it. */
+      let nextBtn = null;
+      if (hintSheet && !S.answerOpen && S.shownHints < hints.length) {
+        nextBtn = el('button', { type: 'button', class: 'plain', text: 'Next hint', onClick: onHint });
+        hintsBox.append(el('div', { class: 'ms-answer' }, nextBtn));
+      }
       if (S.shownHints >= hints.length && lesson.solution) {
         const box = el('div', { class: 'ms-answer' });
         if (S.answerOpen) {
@@ -971,6 +994,9 @@
         hintsBox.append(box);
       }
       lightHinted();
+      /* Repainting removes the focused button, so in the sheet focus moves to Next hint, or to Hide hints when none
+         is left. Never to Show the answer, so pressing Enter again cannot open the answer by accident. */
+      if (hintSheet) (nextBtn || hideBtn).focus({ preventScroll: true });
     }
     function lightHinted() {
       root.querySelectorAll('.col.hinted').forEach((c) => c.classList.remove('hinted'));
@@ -984,7 +1010,7 @@
       if (S.step === 'result' && !isWide()) setStep('task');
       setReqOpen(false);
       if (hintsBox.hidden && S.shownHints > 0) {
-        hintsBox.hidden = false;
+        setHintsOpen(true);
         paintHints();
         fitAll();
         return;
@@ -992,7 +1018,7 @@
       if (S.shownHints < hints.length) {
         S.shownHints++;
         if (!review) State.useHint(lesson.id);
-        hintsBox.hidden = false;
+        setHintsOpen(true);
         paintHints();
         paintHintBtn();
         fitAll();
@@ -1003,7 +1029,7 @@
         }
         return;
       }
-      hintsBox.hidden = !hintsBox.hidden;
+      setHintsOpen(hintsBox.hidden);
       if (!hintsBox.hidden) paintHints();
       fitAll();
     }
@@ -1032,7 +1058,7 @@
         S.outcome = null;
         refreshStatus();
       }
-      hintsBox.hidden = true;
+      setHintsOpen(false);
       fitAll();
       runBtn.focus({ preventScroll: true });
     }
@@ -1497,7 +1523,7 @@
       modelBtn.hidden = true;
       runBtn.setAttribute('aria-label', nextLabelText());
       runBtn.title = nextLabelText();
-      hintsBox.hidden = true;
+      setHintsOpen(false);
       root.classList.add('is-passed');
       root.classList.remove('is-passing');
       fitAll();

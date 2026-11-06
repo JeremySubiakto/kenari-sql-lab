@@ -76,7 +76,7 @@ Errors rise as a **help slip attached to the marked word**, with a small pointer
 
 ## Hints and blanks
 
-Hint button shows pips for how many are left. Hints open inline under the console's upper edge without covering the ticket. "Show the answer" is a quiet text button, never canary, because giving up must not be the loudest option. "Copy for AI" shows only after the first Run. The blanks message attaches directly under the editor: "The yellow boxes are waiting for you. Your cursor is in the first one."
+Hint button shows pips for how many are left. Hints open inline under the console's upper edge without covering the ticket. Below 1000px they slide up as a sheet with Next hint inside, so an error slip stays whole. "Show the answer" is a quiet text button, never canary, because giving up must not be the loudest option. "Copy for AI" shows only after the first Run. The blanks message attaches directly under the editor: "The yellow boxes are waiting for you. Your cursor is in the first one."
 
 ## Home
 

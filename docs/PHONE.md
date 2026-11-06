@@ -46,15 +46,15 @@ Everything needed to do the job, with no scrolling in the normal case at 390x720
 
 Bottom bar: Hint with pips, Start over as a quiet control, and a large canary **Run**.
 
-**With the on-screen keyboard open:** the request collapses to one line, the chips hide, the editor stays visible, and the key bar sits directly above the keyboard with a Run key of its own. Use `visualViewport`. The bottom bar hides. Never let the keyboard cover the line being typed.
+**With the on-screen keyboard open:** the request collapses to one line, the chips hide, the editor stays visible, and the key bar sits directly above the keyboard with a Run key of its own. Use `visualViewport`. The bottom bar hides. Never let the keyboard cover the line being typed. The key bar has two short rows that scroll together, words on top and symbols below. Suggestions take the words' row while they show, so the bar keeps its height. Code in lessons and the mission editor is 14px.
 
-A SQL error stays on this step: the help slip appears above the editor with the plain explanation, the one-click fix and the marked word in view, scrolling inside its own area if long. "Use this one" highlights the column when the Tables sheet opens. A blanks message appears right under the editor.
+A SQL error stays on this step: the help slip appears above the editor with the plain explanation, the one-click fix and the marked word in view, scrolling inside its own area if long. "Use this one" highlights the column when the Tables sheet opens. A blanks message appears right under the editor. Hint opens the hints as a sheet from the bottom, with Next hint inside it, so the help slip stays whole.
 
 ### Result
 After Run, slide to this step automatically (quick, off for reduced motion). **Paper fills the whole step, edge to edge, with no sprocket holes and no side margins.**
 
 1. Pinned one-line request. Tap to expand.
-2. **Verdict band:** title and full text. Never truncate a sentence. If it is long, the band scrolls or expands. On a pass, the SESUAI stamp sits at the band's right, whole and visible, with the win text beside or below it. On a wrong answer, a small NOT YET mark, without the big Teller Validation box.
+2. **Verdict band:** title and full text. Never truncate a sentence. If it is long, the band scrolls or expands. On a pass, the SESUAI stamp sits at the band's right, whole and visible, with the win text beside or below it. On a wrong answer, a small NOT YET mark, without the big Teller Validation box. With the phone on its side, the band sits on the left and the rows on the right, each with the full height.
 3. **Rows in their own scroll box, taking all the remaining height.** At least 5 rows visible at 390x720, even with a long verdict. Numbers stay right-aligned. The "More columns" cue appears when columns are off-screen.
 4. Foot: row count, and on a wrong answer the Your result and The target toggle. Copy for Excel and Copy for AI go in a small "Copy" menu, so they do not take a whole row.
 

@@ -100,7 +100,7 @@ Custom, no library: a transparent `<textarea>` over a highlighted `<pre>`, in a 
 - Ctrl/Cmd+Enter runs. Tab inserts two spaces when there is no blank or popup. Esc leaves the editor, so keyboard users are not trapped.
 - Error marking: after an error, highlight the token from `explainError` until the next edit.
 - Grows with content between about 6 and 24 lines.
-- **Phone:** a key bar of common tokens (`SELECT FROM WHERE * , ' = ( ) ; AND GROUP BY ORDER BY`) above or under the editor on touch devices. 16px text so iOS does not zoom. Keep Run in easy reach with a sticky bar. A "Jump to the editor" control on the mission screen.
+- **Phone:** a key bar of common tokens in two short rows that scroll together, words on top (`SELECT FROM WHERE AND GROUP BY ORDER BY`) and symbols below (`* , ' = ( ) ;`), above the keyboard on touch devices. The mission editor uses 14px code. On iOS the page adds `maximum-scale=1`, so a field under 16px does not zoom the page, and pinch zoom still works. Keep Run in easy reach with a sticky bar. A "Jump to the editor" control on the mission screen.
 
 ## Results
 

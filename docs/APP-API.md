@@ -8,6 +8,7 @@ Static site with no build step. Classic scripts with `defer`, all hanging off on
 index.html                        shell: header, nav, <main id="view">, overlays, script tags in order
 .nojekyll
 assets/icon.svg                   favicon, a stamp mark
+assets/img/og.png                 link preview, 1200x630, under 300 KB so WhatsApp shows it
 assets/css/tokens.css             color, type and spacing tokens, light and dark
 assets/css/base.css               reset, typography, buttons, forms, layout helpers
 assets/css/components.css         shared parts only: keys, terminal, syntax colors, code block, paper, ledger, ticket, verdict band, help slip, stamp, toast, popover, modal, sheet, rosette, weave
@@ -30,10 +31,11 @@ assets/js/app/editor.js           Kenari.Editor
 assets/js/app/evaluate.js         Kenari.evaluate, Kenari.expected
 assets/js/app/mission.js          Kenari.Mission  (routes #/m/ID)
 assets/js/app/home.js             Kenari.Home     (routes #/ and #/journey and #/passbook)
+assets/js/app/share.js            Kenari.Share    (the Share this rank picture on the rank-up sheet)
 assets/js/app/review.js           Kenari.Review   (route #/review)
 assets/js/app/scratch.js          Kenari.Scratch  (route #/scratchpad)
 assets/js/app/sheet.js            Kenari.Sheet    (route #/cheatsheet)
-assets/js/app/main.js             router, boot, settings menu
+assets/js/app/main.js             router, boot, settings menu, Kenari.About (route #/about)
 test.html, tests/selftest.js      runs every mission through the real browser engine
 tests/fixtures.json               DONE. Expected result digests from scripts/verify.mjs --fixtures
 ```
@@ -54,7 +56,7 @@ Also from `main.js`:
 
 - `Kenari.navigate(hash)` goes to a route. `Kenari.refresh()` rebuilds the current screen.
 - `Kenari.Header.hold()` stops the Saldo from updating, and `Kenari.Header.release()` ticks it. On a pass, call `hold()` before `State.recordPass`, then `release()` in the stamp's `onImpact`. `Kenari.Header.refresh()` repaints the Saldo and the Review badge.
-- `document.documentElement.dataset.route` is `home`, `mission`, `review`, `scratchpad`, `cheatsheet` or `notfound`, so a screen's CSS can target `html[data-route="mission"]`.
+- `document.documentElement.dataset.route` is `home`, `mission`, `review`, `scratchpad`, `cheatsheet`, `about` or `notfound`, so a screen's CSS can target `html[data-route="mission"]`.
 - `Kenari.levels` and friends also load in `test.html`, which has no `#view`, so nothing there routes.
 - Below 1000px: `.tabbar` is the site navigation, hidden on `html[data-route="mission"]`, `html[data-reviewing]` and while a field has the keyboard (`html[data-typing]`). `--tabbar-h` and `--shell-bottom` give its height, and `body` keeps that much bottom padding.
 - `html[data-section]` is `journey` or `passbook` on those routes. Below 1000px, CSS shows one section of Home at a time from it. Moving between sections fires `kenari:section` on `document`.
@@ -287,12 +289,30 @@ CSS and page hooks:
 - `--ed-max-h` on `.ed` or any ancestor caps its height, for example the console's 40 percent of the pane. `--ed-lh` changes the line height.
 - `--ed-bar-lift` on `:root`: how far above the keyboard the key bar sits, so a bottom bar can stay under it. The mission screen hides its bottom bar with the keyboard up, so it leaves this at 0.
 - While the key bar is up, the editor sets on `:root`: `--kb-inset` (keyboard height, from `visualViewport`), `--keybar-h`, and `data-keybar="up"`. The first two are not set at other times, so read them with a fallback: `var(--kb-inset,0px)`.
-- The key bar shows on touch devices below 1000px wide. There, suggestions appear as chips inside the key bar, so nothing covers the code. Tablets at 1000px and wider get the popup with 44px rows.
+- The key bar shows on touch devices below 1000px wide. Its keys sit in two short rows that scroll together (`.ed-keys.ed-keys-2` holding `.ed-krow`s): words on top, symbols below. There, suggestions appear as chips in place of the words' row, so nothing covers the code and the bar keeps its height. Tablets at 1000px and wider get the popup with 44px rows.
+- The mission editor is 14px below 1000px. On iOS, `main.js` adds `maximum-scale=1` to the viewport meta, so focusing a field under 16px does not zoom the page. Safari still allows pinch zoom.
 - While the key bar is up, `body` gets bottom padding so the editor can scroll clear of it, even when the console is the last thing on the page.
+
+## Kenari.Share
+
+The Share this rank button on the rank-up sheet. It makes a page of the passbook with the level's rank stamp, as a 1080x1350 PNG drawn on a canvas on the device. Nothing is uploaded.
+
+```js
+Share.image(level)     // level object or number. Promise<Blob>, the PNG. The last picture is kept, so asking again gives the same one.
+Share.prepare(level)   // makes it in the background once the sheet has settled (1.2 s, then when the browser is idle), so the tap shares at once
+Share.rank(level)      // what the button does: navigator.share({files: [png], title: 'Kenari Collection SQL Lab'}) where the browser
+                       // can share files, otherwise a download named kenari-rank-<n>.png. A cancelled share does nothing, and any other
+                       // share error falls back to the download. If the picture cannot be made: toast 'The image could not be made on this browser.'
+                       // Resolves 'shared' | 'cancelled' | 'downloaded' | 'failed' | 'busy'
+```
+
+- The rows are `State.passbook()` lines, as the Passbook screen prints them: the last three passes up to the one that cleared the level, BALANCE B/F from the line before, short dates from `UI.stampDate(date, true).slice(0, 6)`, then `Rank: <rank>`. The stamp is `UI.rankStamp` dated the day the level was cleared. So the picture is the same whenever the sheet opens. A title too long for its column ends in an ellipsis.
+- Colours and fonts are read from the tokens on `:root` when it is drawn, so the light theme gives the light paper. The stamp SVG takes the `ink-s` filter and its colour with it, because an image cannot reach the page's defs or `currentColor`. Positions are measured from the approved mock (540x675 CSS px, drawn at 2x).
+- `rankUp` puts the button (`button.ghost.rk-share`) right after `.rk-act` and calls `prepare`.
 
 ## Screen modules
 
-Each exports `render(container, params)` returning an optional cleanup function. `main.js` routes `#/`, `#/journey`, `#/passbook`, `#/m/<id>`, `#/review`, `#/scratchpad`, `#/cheatsheet`, and shows a friendly not-found view otherwise. `#/journey` and `#/passbook` render Home and scroll to the element with `id="journey"` or `id="passbook"`, so Home must give those sections these ids. Below 1000px each opens as its own screen, at the top. Moving between them does not rebuild Home. Params: Mission gets `{id, lesson}`, and Home gets `{section}` when there is one.
+Each exports `render(container, params)` returning an optional cleanup function. `main.js` routes `#/`, `#/journey`, `#/passbook`, `#/m/<id>`, `#/review`, `#/scratchpad`, `#/cheatsheet`, `#/about`, and shows a friendly not-found view otherwise. `#/about` is `Kenari.About` in `main.js`: the terms on the back of the passbook, reached from the About and privacy row in Settings. `#/journey` and `#/passbook` render Home and scroll to the element with `id="journey"` or `id="passbook"`, so Home must give those sections these ids. Below 1000px each opens as its own screen, at the top. Moving between them does not rebuild Home. Params: Mission gets `{id, lesson}`, and Home gets `{section}` when there is one.
 
 `main.js` sets a default title per route, scrolls to the top, and moves focus to `#view` unless the screen already placed focus inside it. Call `UI.setTitle` in `render` for a better title.
 

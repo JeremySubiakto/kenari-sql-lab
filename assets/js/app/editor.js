@@ -676,24 +676,30 @@
         bar.hidden = true;
         bar.setAttribute('role', 'toolbar');
         bar.setAttribute('aria-label', 'Insert a word');
-        const sugg = div('ed-keys ed-keys-sugg');
-        const keys = div('ed-keys');
+        /* Two short rows that scroll together: words on top, symbols below.
+           Suggestions take the words' row, so the bar keeps its height while you type. */
+        const keys = div('ed-keys ed-keys-2');
+        const words = div('ed-krow');
+        const sugg = div('ed-krow ed-keys-sugg');
+        sugg.hidden = true;
+        const syms = div('ed-krow');
         const row = div('ed-keyrow');
         const next = document.createElement('button');
         next.type = 'button';
         next.className = 'ed-key ed-key-next';
         next.textContent = 'Next blank';
         next.dataset.next = '1';
-        keys.append(next);
+        words.append(next);
         for (const [label, ins] of KEYS) {
           const b = document.createElement('button');
           b.type = 'button';
           b.className = 'ed-key';
           b.textContent = label;
           b.dataset.ins = ins;
-          keys.append(b);
+          (/^[A-Z]/.test(label) ? words : syms).append(b);
         }
-        row.append(sugg, keys);
+        keys.append(words, sugg, syms);
+        row.append(keys);
         /* With the bottom bar hidden behind the keyboard, Run comes along here. */
         if (o.runKey && o.onRun) {
           const run = document.createElement('button');
@@ -721,19 +727,23 @@
           edit(s, end, ins);
         });
         (root.closest('dialog') || document.body).append(bar);
-        this.el = bar; this.sugg = sugg; this.keys = keys; this.next = next;
+        this.el = bar; this.sugg = sugg; this.words = words; this.keys = keys; this.next = next;
       },
       paint() {
         if (!this.el) return;
         this.next.hidden = !blanks.length;
         const showing = ac.open && useChips();
+        /* Both rows share one scroller, so the keys' place is kept while chips are up and given back after. */
+        const was = !this.sugg.hidden;
+        if (showing && !was) this.keysAt = this.keys.scrollLeft;
         this.sugg.hidden = !showing;
-        this.keys.hidden = showing;
+        this.words.hidden = showing;
+        if (!showing && was) this.keys.scrollLeft = this.keysAt || 0;
         if (showing) {
           const esc = (K.UI && K.UI.esc) || escHtml;
           this.sugg.innerHTML = ac.items.slice(0, MAX_ITEMS).map((it, i) =>
             '<button type="button" class="ed-key ed-chip" data-i="' + i + '" aria-label="Insert ' + esc(it.t) + '. ' + esc(it.d) + '"><code>' + esc(it.t) + '</code><small>' + esc(it.d) + '</small></button>').join('');
-          this.sugg.scrollLeft = 0;
+          this.keys.scrollLeft = 0;
         }
       },
       inset() {

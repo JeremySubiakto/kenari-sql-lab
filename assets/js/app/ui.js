@@ -488,8 +488,16 @@
   }
 
   const setTitle = (text) => { document.title = text ? text + ' | Kenari SQL Lab' : 'Kenari Collection SQL Lab: learn SQL free, from zero to pro'; };
+  /* An open modal dialog hides the rest of the page from screen readers, #live included,
+     so while one is open the words go to a quiet region inside it. */
   const announce = (text) => {
-    const live = document.getElementById('live');
+    const open = document.querySelectorAll('dialog[open]');
+    const top = open.length ? open[open.length - 1] : null;
+    let live = document.getElementById('live');
+    if (top) {
+      live = top.querySelector(':scope > .dlg-live');
+      if (!live) { live = el('div', { class: 'vh dlg-live', role: 'status', 'aria-live': 'polite' }); top.append(live); }
+    }
     if (!live) return;
     live.textContent = '';
     setTimeout(() => { live.textContent = text; }, 30);
