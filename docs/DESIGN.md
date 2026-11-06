@@ -97,6 +97,8 @@ Noir's book, with Indonesian ledger heads an accounting graduate will enjoy: Tan
 
 Level Up's structure, in Noir's skin: a sheet of paper on the desk (no full-screen color flood), the level's rosette, a big violet stamp with the new rank, "You can now ..." from `level.goal`, the mini route with you are here, the next level's name and rank on a canary button, and the line "Bank Kenari is made up. This rank is yours."
 
+The rank-up that ends the course, when every level is stamped, adds one more line of small print: "Next, the same idea for Excel: Kenari Excel Lab." The name links to https://jeremysubiakto.github.io/kenari-excel-lab/ in a new tab. No other screen links to Excel Lab.
+
 ## Phone (below 1000px)
 
 Single column in this order: compact position bar ("Mission 2 of 22" with a thin progress bar and prev and next, tapping opens a sheet listing the level's missions), title, new idea, teach, example, bridge, then ticket, tables (collapsed by default, 44px rows), console. **A bottom bar that changes with context:** "Jump to the editor" while reading, Hint and Run once the console is in view, Next after a pass. No canary Run while they are still reading.

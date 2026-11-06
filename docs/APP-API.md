@@ -309,6 +309,7 @@ Share.rank(level)      // what the button does: navigator.share({files: [png], t
 - The rows are `State.passbook()` lines, as the Passbook screen prints them: the last three passes up to the one that cleared the level, BALANCE B/F from the line before, short dates from `UI.stampDate(date, true).slice(0, 6)`, then `Rank: <rank>`. The stamp is `UI.rankStamp` dated the day the level was cleared. So the picture is the same whenever the sheet opens. A title too long for its column ends in an ellipsis.
 - Colours and fonts are read from the tokens on `:root` when it is drawn, so the light theme gives the light paper. The stamp SVG takes the `ink-s` filter and its colour with it, because an image cannot reach the page's defs or `currentColor`. Positions are measured from the approved mock (540x675 CSS px, drawn at 2x).
 - `rankUp` puts the button (`button.ghost.rk-share`) right after `.rk-act` and calls `prepare`.
+- On the rank-up that ends the course (`State.nextRank()` is null), `rankUp` also adds `p.rk-foot.rk-xl` after the small print: "Next, the same idea for Excel: Kenari Excel Lab." The link is `EXCEL_URL` in `home.js`, with `target=_blank` and `rel=noopener`. Both playthroughs (`scripts/dev/e2e-all.mjs`) check that it shows on that rank-up only.
 
 ## Screen modules
 

@@ -316,6 +316,8 @@ dialog.rk::backdrop{background:var(--overlay)}
 .rk .key.canary:focus-visible{outline-color:var(--paper-ink)}
 .rk .mr{margin-top:clamp(8px,1.8vh,18px);max-width:100%}
 .rk-foot{margin-top:clamp(2px,.8vh,8px);font-size:15px;line-height:1.35;color:var(--paper-ink-2)}
+/* The end of the course: one line under the small print points to Kenari Excel Lab. */
+.rk-foot a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .rk-seal{position:relative;width:100%;aspect-ratio:1;max-width:400px;justify-self:center;color:var(--paper-under)}
 .rk-ros{position:absolute;inset:0;display:block}
 .rk-ros svg.ros{width:100%;height:100%;color:var(--paper-under);overflow:visible}

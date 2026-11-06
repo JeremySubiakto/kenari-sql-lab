@@ -9,7 +9,7 @@
  * phone (390x720, touch, Android): follows the steps. Learn, then Try it, then Task, then the help path: every hint,
  *   Show the answer, Put it in the editor, Run, then Result. Checks that the page stays locked, Run is in view on Task,
  *   the Result step opens with rows, stamp and Next in view, and a wrong answer never flashes NOT YET on a pass.
- * Both follow Next from Mission 0.1 to the finished passbook, including every rank-up.
+ * Both follow Next from Mission 0.1 to the finished passbook, including every rank-up. Only the last rank-up may link to Kenari Excel Lab.
  */
 import { launch, BASE, sleep, OUT } from './cdp.mjs';
 import { writeFileSync } from 'node:fs';
@@ -28,7 +28,8 @@ await p.go(BASE + '/index.html#/m/0.1', 1500);
 for (let i = 0; i < 200; i++) { if (await p.ev(`!!(window.Kenari && Kenari.Engine && Kenari.Engine.status === 'ready' && document.querySelector('.ms-run'))`).catch(() => false)) break; await sleep(100); }
 
 const problems = [];
-const stats = { missions: 0, nextMs: [], ranks: 0 };
+const stats = { missions: 0, nextMs: [], ranks: 0, xl: 0 };
+const EXCEL_URL = 'https://jeremysubiakto.github.io/kenari-excel-lab/';
 let shots = 0;
 const problem = async (id, what, extra) => {
   problems.push({ id, what, extra });
@@ -212,6 +213,11 @@ for (let i = 0; i < ids.length; i++) {
       if (shots < 20 && stats.ranks <= 1) await p.shot(`rank-${view}-${id}`);
       const inView = await p.ev(`(()=>{const r=document.querySelector('.rk-go').getBoundingClientRect(); return r.top>=0&&r.bottom<=innerHeight})()`);
       if (!inView) await problem(id, 'rank-up button off screen');
+      /* Kenari Excel Lab is linked once: on the rank-up that ends the course, and on no other. */
+      const xl = await p.ev(`(()=>{const a=document.querySelector('dialog.rk .rk-xl a');return {end:!Kenari.State.nextRank(),href:a&&a.getAttribute('href'),target:a&&a.target,rel:a&&a.rel}})()`);
+      if (xl.href) stats.xl++;
+      if (xl.end && (xl.href !== EXCEL_URL || xl.target !== '_blank' || xl.rel !== 'noopener')) await problem(id, 'last rank-up without the Excel Lab link', xl);
+      if (!xl.end && xl.href) await problem(id, 'Excel Lab link before the end of the course', xl);
       await p.ev(`document.querySelector('.rk-go').click()`);
       await sleep(500);
     }
@@ -221,6 +227,7 @@ for (let i = 0; i < ids.length; i++) {
 }
 
 await sleep(800);
+if (stats.xl !== 1) await problem('end', 'the Excel Lab link showed on ' + stats.xl + ' rank-ups, not 1');
 const end = { hash: await p.ev('location.hash'), saldo: await p.ev(`Kenari.State.doneCount()`), rank: await p.ev(`Kenari.State.rank()`), stamps: await p.ev(`Kenari.State.stamps().length`) };
 await p.shot(`finished-${view}`);
 const sorted = stats.nextMs.slice().sort((a, c) => a - c);

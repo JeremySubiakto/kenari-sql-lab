@@ -19,6 +19,8 @@
   const SCISSORS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6.5" r="2.7"/><circle cx="6" cy="17.5" r="2.7"/><path d="M8.3 8 20 17M8.3 16 20 7"/></svg>';
   const MICRO = 'BANK KENARI ADALAH BANK FIKTIF '.repeat(14);
   const STAMP_ROT = [-9, 7, -5, 11, -12, 6, -7, 9, -4, -10];
+  /* The sister course. Linked once, from the rank-up that ends this course. */
+  const EXCEL_URL = 'https://jeremysubiakto.github.io/kenari-excel-lab/';
 
   const missions = (n) => n + (n === 1 ? ' mission' : ' missions');
   const rows = (n) => Number(n).toLocaleString('en-US') + (n === 1 ? ' row' : ' rows');
@@ -169,7 +171,9 @@
           el('div', { class: 'rk-act' }, go),
           share,
           route,
-          el('p', { class: 'rk-foot', text: 'Bank Kenari is made up. This rank is yours.' })),
+          el('p', { class: 'rk-foot', text: 'Bank Kenari is made up. This rank is yours.' }),
+          finished ? el('p', { class: 'rk-foot rk-xl' }, 'Next, the same idea for Excel: ',
+            el('a', { href: EXCEL_URL, target: '_blank', rel: 'noopener', text: 'Kenari Excel Lab' }), '.') : null),
         seal);
       const dlg = el('dialog', { class: 'rk', 'aria-labelledby': 'rkTitle' }, sheet);
       document.body.append(dlg);
