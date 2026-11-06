@@ -158,6 +158,8 @@
 
       const seal = el('div', { class: 'rk-seal' }, el('span', { class: 'rk-ros', html: UI.rosette(level.n, 100) }));
       const route = miniRoute({ paper: true, link: false, here: next ? K.levels.indexOf(next) : -1 });
+      /* A passbook page with this stamp, made on the device as a picture to share (Kenari.Share). */
+      const share = K.Share ? el('button', { type: 'button', class: 'ghost rk-share', text: 'Share this rank', onClick: () => K.Share.rank(level) }) : null;
       const sheet = el('div', { class: 'paper rk-sheet' },
         el('div', { class: 'rk-copy' },
           el('p', { class: 'rk-label', text: 'Level ' + level.n + ' cleared, ' + total + ' of ' + total + ' missions' }),
@@ -165,6 +167,7 @@
           el('p', { class: 'rk-can' }, 'You can now ' + lowerFirst(level.goal)),
           heldBack ? el('p', { class: 'rk-held', text: 'This stamp is yours. Your rank in the passbook stays ' + State.rank() + ' until Level ' + nr.level.n + ' is cleared too.' }) : null,
           el('div', { class: 'rk-act' }, go),
+          share,
           route,
           el('p', { class: 'rk-foot', text: 'Bank Kenari is made up. This rank is yours.' })),
         seal);
@@ -208,6 +211,7 @@
       };
       UI.prepFlare(true);
       setTimeout(land, UI.motionOK() ? 420 : 0);
+      if (share) K.Share.prepare(level);
     });
   }
 
@@ -294,9 +298,11 @@
         ? '<span>From zero</span> <span>to SQL pro,</span> <span class="soft">on a fake bank’s</span> <span class="soft">real-looking data.</span>'
         : '<span>From zero to SQL pro,</span> <span class="soft">on a fake bank’s</span> <span class="soft">real-looking data.</span>' });
     }
+    /* A first visit says who the course is for, right under the promise. */
+    const who = mode === 'new' ? el('p', { class: 'hm-who', text: 'For anyone starting SQL from zero. Excel helps, but you do not need it.' }) : null;
     const left = el('div', { class: 'hm-l' },
       el('p', { class: 'hm-eyebrow', html: UI.icons.shield + '<span>Bank Kenari is made up. You cannot break anything here.</span>' }),
-      h1, slipHost, routeHost, acctHost);
+      h1, who, slipHost, routeHost, acctHost);
 
     /* ---------- Hero, right: the live query, which really runs ---------- */
     const lampEl = el('span', { class: 'mc-lamp', 'aria-hidden': 'true' });

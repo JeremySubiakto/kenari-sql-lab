@@ -58,9 +58,10 @@
     { re: /^\/m\/([\d.]+)\/?$/, module: 'Mission', nav: null, mission: true },
     { re: /^\/review\/?$/, module: 'Review', nav: 'review', title: 'Review' },
     { re: /^\/scratchpad\/?$/, module: 'Scratch', nav: 'scratchpad', title: 'Scratchpad' },
-    { re: /^\/cheatsheet\/?$/, module: 'Sheet', nav: 'cheatsheet', title: 'Cheat sheet' }
+    { re: /^\/cheatsheet\/?$/, module: 'Sheet', nav: 'cheatsheet', title: 'Cheat sheet' },
+    { re: /^\/about\/?$/, module: 'About', nav: null, title: 'About' }
   ];
-  const ROUTE_NAMES = { Home: 'home', Mission: 'mission', Review: 'review', Scratch: 'scratchpad', Sheet: 'cheatsheet' };
+  const ROUTE_NAMES = { Home: 'home', Mission: 'mission', Review: 'review', Scratch: 'scratchpad', Sheet: 'cheatsheet', About: 'about' };
 
   let cleanup = null;
   let currentModule = null;
@@ -214,6 +215,31 @@
     refresh: paintHeader
   };
 
+  /* ---------- About: printed like the terms on the back of a passbook ---------- */
+  const REPORT_URL = 'https://github.com/JeremySubiakto/kenari-sql-lab/issues/new?template=problem.md';
+  K.About = {
+    render(host) {
+      const rows = [
+        ['What this is', 'A free course that takes you from your first query to professional SQL: ' + K.lessons.length + ' missions, with real SQLite running in your browser.'],
+        ['Bank Kenari', 'Bank Kenari is made up. Every bank, branch, customer and colleague here is invented, and none of it stands for a real bank or person.'],
+        ['Your privacy', 'Your progress stays in this browser. There is no account, no analytics and no tracking. Your queries stay on your device unless you copy them somewhere yourself.'],
+        ['Other services', 'The page loads its fonts from Google Fonts and the SQL engine from cdnjs or jsDelivr. Those hosts see a normal web request, as with any website.'],
+        ['Who made it', 'Made by Jeremy Subiakto.'],
+        ['License', 'Code: MIT. Lessons: CC BY-NC 4.0, so share them with credit, but not for sale.'],
+        ['Found a problem?', [UI.el('a', { href: REPORT_URL, target: '_blank', rel: 'noopener', text: 'Report it on GitHub' }), '. You need a free GitHub account.']]
+      ];
+      host.append(UI.el('div', { class: 'paper ab-book' },
+        UI.el('div', { class: 'ab-book-in' },
+          UI.el('h1', { lang: 'id', text: 'Syarat dan ketentuan' }),
+          UI.el('small', { text: 'Terms, on the back of your passbook' }),
+          UI.el('dl', {}, rows.map(([term, def]) => UI.el('div', {}, UI.el('dt', { text: term }), UI.el('dd', {}, def)))),
+          UI.el('p', { class: 'eoe', text: 'E. & O.E.' }))));
+    }
+  };
+  /* Already on About, the link changes nothing, so the computer's menu closes by hand. */
+  const aboutRow = () => UI.el('a', { class: 'menu-row', href: '#/about', onClick: () => { if (/^#\/about\/?$/.test(location.hash)) closeMenu(true); } }, UI.el('span', { text: 'About and privacy' }));
+  const madeBy = () => UI.el('p', { class: 'menu-made', text: 'Made by Jeremy Subiakto' });
+
   /* ---------- Settings ---------- */
   function downloadProgress() {
     const blob = new Blob([State.exportJson()], { type: 'application/json' });
@@ -307,7 +333,7 @@
     if (refocus) $('gear').focus();
   }
   function openMenu() {
-    menuEl = UI.el('div', { class: 'menu', role: 'group', 'aria-label': 'Settings' }, settingsRows(() => closeMenu()));
+    menuEl = UI.el('div', { class: 'menu', role: 'group', 'aria-label': 'Settings' }, settingsRows(() => closeMenu()), aboutRow(), madeBy());
     $('top').append(menuEl);
     $('gear').setAttribute('aria-expanded', 'true');
     const first = menuEl.querySelector('button[aria-pressed="true"]');
@@ -318,16 +344,27 @@
     $('themeBtn').setAttribute('aria-label', 'Switch to the ' + (dark ? 'light' : 'dark') + ' theme');
   }
 
-  /* On a phone, the settings come up as a sheet. The tab bar handles navigation, so only the Passbook is linked here. */
+  /* On a phone, the settings come up as a sheet. The tab bar handles navigation, so only the Passbook and About are linked here. */
   function openSettingsSheet() {
     let sheet = null;
     const body = UI.el('div', {},
       UI.el('div', { class: 'sheet-group' }, settingsRows(() => sheet && sheet.close())),
       UI.el('div', { class: 'sheet-group' },
-        UI.el('a', { class: 'menu-row', href: '#/passbook' }, UI.el('span', { text: 'Open your passbook' }), UI.el('span', { text: State.doneCount() + ' cleared' }))));
+        UI.el('a', { class: 'menu-row', href: '#/passbook' }, UI.el('span', { text: 'Open your passbook' }), UI.el('span', { text: State.doneCount() + ' cleared' })),
+        aboutRow()),
+      madeBy());
     body.addEventListener('click', (e) => { if (e.target.closest('a')) sheet.close(); });
     sheet = UI.sheet({ title: 'Settings', body });
   }
+
+  /* iOS zooms the whole page into any text box under 16px when it gets focus, and the mission editor
+     on a phone is 14px. maximum-scale=1 stops only that zoom: since iOS 10, Safari still lets people
+     pinch to zoom. Other browsers never get the setting. */
+  (function stopFocusZoom() {
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (ios && meta && !/maximum-scale/.test(meta.content)) meta.content += ', maximum-scale=1';
+  })();
 
   /* While the on-screen keyboard is up, the tab bar steps aside, and fixed layouts follow the visible height. */
   function trackPhoneViewport() {

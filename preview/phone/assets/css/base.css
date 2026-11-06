@@ -70,6 +70,7 @@ noscript .boot-note{padding:32px var(--gutter)}
 .menu-row:hover{color:var(--verd)}
 .menu-row>span:last-child:not(:first-child){color:var(--text-3);font-size:14px}
 .menu-note{padding-top:10px;border-top:1px solid var(--hair);font-size:14px;line-height:1.4;color:var(--text-3)}
+.menu-made{margin:14px 2px 2px;color:var(--text-3);font:400 14px/1.4 var(--f-body)}
 .sheet-group{margin-bottom:18px}
 .sheet-group .menu-row{min-height:48px;font-size:16px}
 .sheet-group .seg button{height:44px}

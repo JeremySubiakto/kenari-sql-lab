@@ -436,7 +436,7 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
   .ms-ex-mc{margin:0 calc(var(--g)*-1);border-radius:0;box-shadow:none}
   .ms-ex-lines{padding:4px 0 6px}
   .ms-ex-line{padding:8px var(--g)}
-  .ms-ex-mc code.ms-ex-sql{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+  .ms-ex-mc code.ms-ex-sql{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:22px}
   .ms-ex-en{font-size:16px;line-height:1.42;margin-top:3px}
   .ms-ex-t{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;margin-top:6px;font:600 15.5px/1.2 var(--f-body);color:var(--text);text-align:left}
   .ms-ex-t[hidden]{display:none}
@@ -507,21 +507,20 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
   .ms-mc{height:100%;min-height:0;border-radius:0;box-shadow:none}
   .ms-bar{flex:none;min-height:38px;padding:4px var(--g)}
   .ms-note,.ms-mc .slot{display:none}
-  .ms-hints{max-height:30vh;max-height:44cqh}
   .ms-hint{font-size:16px}
   .ms-hints-h .plain{min-height:44px}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-upper{max-height:20vh;max-height:20cqh}
-  /* Hints open: the editor always keeps three lines, and the slip folds to its title and its one-click fix. */
-  .ms-do:has(.ms-hints:not([hidden])) .ms-hints{flex:0 1 auto;min-height:0;max-height:none}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-edbox{flex:1 1 90px;min-height:90px}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-dock{min-height:224px}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-slip-b>:not(h3):not(.help-act){display:none}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-slip .help-act:not(:has(.fixbtn)){display:none}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-slip .help-act .tlink{display:none}
-  .ms-do:has(.ms-hints:not([hidden])) .ms-slip-b{padding-bottom:6px;background:none}
+  /* Hints slide up as a sheet over the task, so an error slip above them stays whole. */
+  dialog.ms-hintsheet{max-height:62vh;overflow:hidden;background:var(--mc-2);border-color:var(--mc-hair);border-radius:14px 14px 0 0;color:var(--mc-text)}
+  dialog.ms-hintsheet .dlg-h{display:none}
+  dialog.ms-hintsheet .dlg-b{padding:0}
+  .ms-hintsheet .ms-hints{max-height:calc(62vh - env(safe-area-inset-bottom,0px));padding:6px 16px 24px;border-bottom:0}
+  .ms-hintsheet .ms-hints-h{margin:-6px -16px 4px;padding:10px 16px;border-bottom:1px solid var(--mc-divider);font-size:17px}
+  /* The sheet sits outside the console, so in the light theme it borrows the console's colours for links, code, buttons and focus. */
+  :root[data-theme="light"] dialog.ms-hintsheet{--term:var(--sx-kw);--code-bg:var(--mc-code-bg);--code-fg:var(--mc-code-fg);--text:var(--mc-text);--text-3:var(--mc-text-3);--hair-2:var(--mc-hair);--focus:var(--paper)}
   .ms-edbox{flex:1 1 0;min-height:0;--ed-max-h:none}
   .ms-edhost{height:100%;min-height:0}
-  .ms .ed{height:100%;--ed-pad-x:var(--g)}
+  /* 14px code fits about 42 characters on a line, so wrapped queries keep more of their shape. */
+  .ms .ed{height:100%;--ed-pad-x:var(--g);--ed-font:14px;--ed-lh:24px}
   .ms .ed-scroll{height:100%;max-height:none}
   /* A soft edge says there is more of the query above or below. */
   .ms .ed-scroll{background:linear-gradient(var(--mc) 40%,transparent) top/100% 18px no-repeat local,linear-gradient(transparent,var(--mc) 60%) bottom/100% 18px no-repeat local,radial-gradient(farthest-side at 50% 0,var(--mc-hair),transparent) top/100% 12px no-repeat scroll,radial-gradient(farthest-side at 50% 100%,var(--mc-hair),transparent) bottom/100% 12px no-repeat scroll}
@@ -726,15 +725,18 @@ button.col:hover code{text-decoration:underline;text-underline-offset:3px}
     .ms-ticket:has(>.tk-closed) .tk-top{padding-right:0}
     .ms-upper.is-clamped::after{height:9px}
   }
-  /* On its side the rows matter most: the band folds to its title, and More opens the rest. */
+  /* On its side, a Result with rows puts the text on the left and the rows on the right, each with the full height.
+     More is not needed there, and a band opened upright still shows its rows. A Result with no rows keeps the full width. */
   @media (max-height:449px){
     .ms-sheet .ms-pin{display:none}
-    .ms-sheet .vband{max-height:48px;padding-top:7px;padding-bottom:7px}
+    .ms-sheet:has(.ledger){display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:minmax(0,1fr)}
+    .ms-sheet:has(.ledger) .vband,.ms-sheet:has(.ledger)[data-state="pass"] .vband,.ms-sheet.band-open:has(.ledger) .vband{display:flex;flex-direction:column;height:100%;min-height:0;max-height:none;overflow:auto;padding-top:7px;padding-bottom:7px;border-right:1px solid var(--paper-rule);border-bottom:0}
+    .ms-sheet:has(.ledger) .ms-results,.ms-sheet.band-open:has(.ledger) .ms-results{display:flex;height:100%;min-height:0}
+    .ms-sheet:has(.ledger) .ms-band-more{display:none}
+    .ms-sheet:has(.ledger) .vband.has-more::after{display:none}
     .ms-sheet:not([data-state="pass"]) .validation{margin-right:62px}
-    .vband.has-more::after{height:12px}
-    .ms-sheet[data-state="pass"] .vband{min-height:0;max-height:72px}
-    .ms-sheet[data-state="pass"] .validation,.ms-sheet:not(:has(.ledger)) .validation.stamped{width:62px;height:62px;min-height:62px;margin:0 56px 0 8px}
-    .ms-sheet.band-open .vband,.ms-sheet.band-open[data-state="pass"] .vband{max-height:none}
+    .ms-sheet:has(.ledger)[data-state="pass"] .validation{width:80px;height:80px;min-height:80px;margin:0 56px 0 8px}
+    .ms-sheet:not(:has(.ledger)) .validation.stamped{width:62px;height:62px;min-height:62px;margin:0 56px 0 8px}
     .ms-sheet .lg-foot,.ms-foot0{min-height:44px}
   }
 }

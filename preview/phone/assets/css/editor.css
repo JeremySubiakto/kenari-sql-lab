@@ -241,6 +241,9 @@
   touch-action:pan-x;
 }
 .ed-keys::-webkit-scrollbar{display:none}
+/* Two short rows that scroll together: words on top, symbols below */
+.ed-keys.ed-keys-2{display:block}
+.ed-krow{display:flex;gap:6px;width:max-content;padding:2px 0}
 .ed-key{
   flex:none;
   min-width:44px;
