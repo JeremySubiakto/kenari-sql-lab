@@ -201,6 +201,23 @@
     }
   }
 
+  /* ---------- The opening shows the course's own rows and counts ---------- */
+  async function testIntro() {
+    const where = 'intro';
+    const I = K.Intro && K.Intro.data;
+    check(!!I, where, 'Kenari.Intro.data is missing');
+    if (!I) return;
+    const rows = async (sql) => (await K.Engine.run(sql, { db: 'reference' })).results[0].rows;
+    const loans = await rows('SELECT loan_id, branch_id, product, dpd, outstanding FROM loans ORDER BY loan_id LIMIT 40');
+    check(JSON.stringify(loans) === JSON.stringify(I.LOANS), where, 'the 40 loans in the opening must match the database');
+    const names = await rows('SELECT branch_id, branch_name FROM branches ORDER BY branch_id');
+    check(names.length === I.BRANCH.length - 1 && names.every((r) => I.BRANCH[r[0]] === r[1]), where, 'the opening\'s branch names must match the database');
+    const over = await rows('SELECT b.branch_name, COUNT(*) FROM loans l JOIN branches b ON b.branch_id = l.branch_id WHERE l.dpd > 90 GROUP BY b.branch_name');
+    const want = new Map(over.map((r) => [r[0], r[1]]));
+    check(over.length === I.OVER.length && I.OVER.every((o) => want.get(o[0]) === o[1]), where, 'the opening\'s loans over 90 days per branch must match the database');
+    check(I.OVER.every((o, i) => i === 0 || I.OVER[i - 1][1] >= o[1]), where, 'the opening\'s bars must be longest first');
+  }
+
   /* ---------- The engine's promises ---------- */
   async function testEngine() {
     const where = 'engine';
@@ -398,6 +415,7 @@
     }
     paint('Testing the engine\'s promises, including an 8-second timeout.');
     try { await testEngine(); } catch (e) { check(false, 'engine', 'crash: ' + (e.stack || e.message || JSON.stringify(e))); }
+    try { await testIntro(); } catch (e) { check(false, 'intro', 'crash: ' + (e.stack || e.message || JSON.stringify(e))); }
 
     report.ms = Math.round(performance.now() - t0);
     report.passed = total - failures.length;

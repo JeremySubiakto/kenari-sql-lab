@@ -29,10 +29,27 @@
 })();
 </script>
 <script>
+/* The opening (assets/js/app/intro.js) plays once a visit, and only when a visit starts on Home. It is decided before
+   first paint, so Home never flashes ahead of it: html.kn-cover hides the page until main.js starts the opening.
+   The visit is marked on its first page, whatever the screen, so a later reload of Home does not play it mid-visit.
+   ?nointro skips it and ?intro forces it. Not in a hidden tab, and not in forced colors (it needs its own colours). */
+(function () {
+  try {
+    var q = location.search, html = document.documentElement, force = /[?&]intro\b/.test(q), seen = null;
+    /* storage blocked: the visit cannot be remembered, so only ?intro plays it */
+    try { seen = sessionStorage.getItem('kenari.intro.v1'); sessionStorage.setItem('kenari.intro.v1', '1'); } catch (e) { if (!force) return; }
+    if (!/^#?\/?$/.test(location.hash) || /[?&]nointro\b/.test(q) || document.visibilityState === 'hidden' || !html.animate) return;
+    if (matchMedia('(forced-colors: active)').matches || (seen && !force)) return;
+    html.classList.add('kn-cover');
+  } catch (e) { /* no opening */ }
+})();
+</script>
+<script>
 /* If a script does not arrive, or the app cannot start, say so and offer a reload, in place of a page that waits forever. */
 (function () {
   function failed() {
     if (window.Kenari && Kenari.booted) return;
+    document.documentElement.classList.remove('kn-cover');
     var view = document.getElementById('view');
     if (!view) return;
     view.innerHTML = '<div class="wrap wrap-narrow notfound"><h1 class="page-title">The lab did not finish loading</h1><p class="page-lead">A file did not arrive, which can happen on a patchy connection or a strict office network. Your progress is safe in this browser. Reload the page to try again.</p><a class="key canary" href="" onclick="location.reload();return false">Reload the page</a></div>';
@@ -56,6 +73,7 @@
 <link rel="stylesheet" href="assets/css/home.css">
 <link rel="stylesheet" href="assets/css/tools.css">
 <link rel="stylesheet" href="assets/css/demos.css">
+<link rel="stylesheet" href="assets/css/intro.css">
 <script defer src="assets/js/core/data.js"></script>
 <script defer src="assets/js/core/check.js"></script>
 <script defer src="assets/js/core/reference.js"></script>
@@ -82,6 +100,7 @@
 <script defer src="assets/js/app/review.js"></script>
 <script defer src="assets/js/app/scratch.js"></script>
 <script defer src="assets/js/app/sheet.js"></script>
+<script defer src="assets/js/app/intro.js"></script>
 <script defer src="assets/js/app/main.js"></script>
 </head>
 <body>

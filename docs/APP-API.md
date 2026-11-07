@@ -17,6 +17,7 @@ assets/css/mission.css            owned by the mission agent (Review reuses it)
 assets/css/home.css               owned by the home agent (Home, Journey, Passbook, rank-up)
 assets/css/tools.css              owned by the review, scratchpad and cheat sheet agents
 assets/css/demos.css              owned by the demos agent
+assets/css/intro.css              the opening's styles, and html.kn-cover, which hides the first paint until it starts
 assets/js/core/data.js            DONE. KenariData: SCHEMA, LINKS, VALUES, build, adapters
 assets/js/core/check.js           DONE. KenariCheck: compare, tipsFor, explainError, hasBlanks, ...
 assets/js/core/reference.js       DONE. KenariRef: GLOSSARY, EXCEL_MAP, DIALECTS
@@ -35,6 +36,7 @@ assets/js/app/share.js            Kenari.Share    (the Share this rank picture o
 assets/js/app/review.js           Kenari.Review   (route #/review)
 assets/js/app/scratch.js          Kenari.Scratch  (route #/scratchpad)
 assets/js/app/sheet.js            Kenari.Sheet    (route #/cheatsheet)
+assets/js/app/intro.js            Kenari.Intro   (the opening, over Home's first paint)
 assets/js/app/main.js             router, boot, settings menu, Kenari.About (route #/about)
 test.html, tests/selftest.js      runs every mission through the real browser engine
 tests/fixtures.json               DONE. Expected result digests from scripts/verify.mjs --fixtures
@@ -310,6 +312,28 @@ Share.rank(level)      // what the button does: navigator.share({files: [png], t
 - Colours and fonts are read from the tokens on `:root` when it is drawn, so the light theme gives the light paper. The stamp SVG takes the `ink-s` filter and its colour with it, because an image cannot reach the page's defs or `currentColor`. Positions are measured from the approved mock (540x675 CSS px, drawn at 2x).
 - `rankUp` puts the button (`button.ghost.rk-share`) right after `.rk-act` and calls `prepare`.
 - On the rank-up that ends the course (`State.nextRank()` is null), `rankUp` also adds `p.rk-foot.rk-xl` after the small print: "Next, the same idea for Excel: Kenari Excel Lab." The link is `EXCEL_URL` in `home.js`, with `target=_blank` and `rel=noopener`. Both playthroughs (`scripts/dev/e2e-all.mjs`) check that it shows on that rank-up only.
+
+## Kenari.Intro
+
+The opening, "Collection day" (about 4.3 s): `FROM loans` streams the ledger, `WHERE dpd > 90` lights the overdue loans, `GROUP BY branch` turns them into one bar per branch and `ORDER BY` sorts them. The bars fold into the rule under "Kenari Collection SQL Lab", the name glides onto Home's headline, and the screen splits open on Home. It is always dark.
+
+```js
+Intro.start()          // main.js calls it once, after the first route. Plays only if html.kn-cover is set, Home is up
+                       // within 2.5 s of the page opening, the tab is in view and forced colors are off. When the
+                       // opening ends it sends 'kenari:intro-end' to the document (Home's first-visit lamp waits for it).
+Intro.play(onDone, { reduce, t, by })   // builds #kn-intro, plays it, removes it, then calls onDone.
+                       // Returns { duration, seek(ms), skip() }. t freezes the frame there (tests). It waits for the
+                       // fonts at most 600 ms, and never past by (ms since the page opened; start() passes 2800).
+Intro.current          // that controller while the opening plays, else null
+Intro.data             // { LOANS, BRANCH, OVER }: the rows and counts it shows
+```
+
+- When: once a visit, and only when the visit starts on Home (`#/` or no hash). The inline script in `index.html` decides before first paint and sets `html.kn-cover`, which covers the page (intro.css) until `main.js` starts the opening and lifts it. The cover also lifts by itself after 3 s, and the load-error message removes it. The same script marks the visit on its first page, whatever the screen (sessionStorage `kenari.intro.v1`), so a visit that starts on a mission never plays it on a later reload of Home. `?nointro` skips the opening, and `?intro` plays it even when the visit has seen it. A tab opened in the background, and forced colors (Windows Contrast themes), do not play it. With storage blocked, only `?intro` plays it. If the display font is not in when the opening is built, the name is measured and drawn in the fallback face throughout (`#kn-intro.kn-fb`).
+- The landing is measured from the page: the name takes `.hm-h1`'s font size, line height, width and letter spacing, and its two lines end on the headline's first two. When the headline is hidden (on a phone, coming back), the name stays where it stands and the screen splits open from its rule.
+- Skip: the Skip intro button, any key (browser shortcuts still work), a tap, a wheel turn anywhere or a scroll (Home must not move under it). A tap skips on pointerdown, and the click that ends it is swallowed, so it never lands on Home: only that press's click, until 400 ms after it lifts or the next press, and never past 3 s. A new width, or on a computer a new height, skips it too, and hiding the tab ends it.
+- Reduced motion, or a screen under 540px tall: the name fades in, holds, and the cover fades to Home (1.8 s).
+- Only transform, opacity and clip-path animate. While it plays, theme-color is the opening's dark ground.
+- `tests/selftest.js` checks `Intro.data` against the database: the 40 loans, the branch names, and the loans over 90 days per branch.
 
 ## Screen modules
 

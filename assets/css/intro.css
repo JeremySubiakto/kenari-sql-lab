@@ -1,0 +1,67 @@
+/* The opening, "Collection day" (assets/js/app/intro.js). It is always dark, in both themes.
+   Everything lives under #kn-intro, and only transform, opacity and clip-path animate. */
+
+/* Until the opening starts, a plain ground hides Home's first paint. It lifts by itself after 3 s if the opening never comes. */
+html.kn-cover body::after{content:"";position:fixed;inset:0;z-index:2147483000;background:#06181D radial-gradient(120% 85% at 50% 40%,#0A2129 0%,#06181D 55%,#04131A 100%);animation:kn-uncover 0s 3s forwards}
+@keyframes kn-uncover{to{visibility:hidden}}
+
+#kn-intro{position:fixed;inset:0;z-index:2147483000;overflow:hidden;touch-action:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-synthesis:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;cursor:default}
+#kn-intro *{box-sizing:border-box;margin:0;padding:0}
+#kn-intro .kn-a,#kn-intro .kn-b,#kn-intro .kn-g{position:absolute;inset:0}
+#kn-intro .kn-g{background:#06181D radial-gradient(120% 85% at 50% 40%,#0A2129 0%,#06181D 55%,#04131A 100%)}
+#kn-intro .kn-meas{position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font-family:var(--f-display);font-weight:500}
+#kn-intro .kn-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* caption: the query, one clause per step */
+#kn-intro .kn-cap{position:absolute;font-family:var(--f-mono);color:#EAF2EE}
+#kn-intro .kn-cl{position:absolute;left:0;white-space:pre}
+#kn-intro .kn-ct{display:inline-block;vertical-align:top;clip-path:inset(0 100% 0 0)}
+#kn-intro .kn-ct .k{color:#85DCC9;font-weight:500}
+#kn-intro .kn-ct .n{color:#9CD5FF}
+#kn-intro .kn-ct .o{color:#93AFAC}
+#kn-intro .kn-caret{position:absolute;left:0;top:50%;width:2px;height:1.15em;margin-top:-.6em;background:#F4EDDB;opacity:0}
+/* ledger */
+#kn-intro .kn-led{position:absolute;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+#kn-intro .kn-hdr,#kn-intro .kn-ft{position:absolute;left:0;right:0}
+#kn-intro .kn-hdr{border-bottom:1px solid rgba(127,214,196,.26)}
+#kn-intro .kn-ft{height:1px;background:rgba(127,214,196,.2)}
+#kn-intro .kn-r,#kn-intro .kn-h{position:absolute;left:0;width:42ch;display:grid;grid-template-columns:7ch 12ch 3ch 14ch;column-gap:2ch;align-items:center;white-space:pre}
+#kn-intro .kn-h{color:#8BA9A6;font-weight:500}
+#kn-intro .kn-r .i,#kn-intro .kn-h .i,#kn-intro .kn-r .d,#kn-intro .kn-h .d,#kn-intro .kn-r .o,#kn-intro .kn-h .o{text-align:right}
+#kn-intro .kn-r .i{color:#7F9E9C}
+#kn-intro .kn-r .p,#kn-intro .kn-r .o{color:#BCD2CD}
+#kn-intro .kn-r .d{color:#9CD5FF}
+#kn-intro .kn-hu{position:absolute;bottom:-2px;height:2px;background:#FFD83A;transform-origin:0 50%;transform:scaleX(0)}
+#kn-intro .kn-win{position:absolute;overflow:hidden}
+#kn-intro .kn-col{position:absolute;top:0}
+#kn-intro .kn-lit,#kn-intro .kn-fl{display:grid;grid-template-columns:7ch 12ch 3ch 14ch;column-gap:2ch;align-items:center;white-space:pre;padding-left:.6ch;background:#FFD83A;color:#221B00;font-weight:500}
+#kn-intro .kn-lit{position:absolute;top:1px;bottom:1px;left:-.6ch;right:-.6ch;clip-path:inset(0 100% 0 0)}
+#kn-intro .kn-lit .i,#kn-intro .kn-lit .d,#kn-intro .kn-lit .o,#kn-intro .kn-fl .i,#kn-intro .kn-fl .d,#kn-intro .kn-fl .o{text-align:right}
+#kn-intro .kn-fi{position:absolute;inset:0;background:#FFD83A;transform-origin:0 0}
+#kn-intro .kn-fly{position:absolute;opacity:0;font-family:var(--f-mono)}
+#kn-intro .kn-fl{position:absolute;inset:0;background:none}
+#kn-intro .kn-scan{position:absolute;opacity:0}
+#kn-intro .kn-scanl{position:absolute;left:0;right:0;top:0;height:2px;background:#FFD83A;box-shadow:0 0 12px 1px rgba(255,216,58,.55)}
+#kn-intro .kn-scanl i{position:absolute;left:0;right:0;bottom:2px;height:44px;background:linear-gradient(to top,rgba(255,216,58,.15),rgba(255,216,58,0))}
+/* bars, one per branch */
+#kn-intro .kn-br{position:absolute;left:0;width:100%}
+#kn-intro .kn-bl{position:absolute;white-space:nowrap;color:#BCD2CD;font-family:var(--f-body);opacity:0}
+#kn-intro .kn-bb{position:absolute;background:#FFD83A;border-radius:1px;transform-origin:0 0}
+#kn-intro .kn-bc{position:absolute;white-space:nowrap;color:#EAF2EE;font-family:var(--f-mono);font-weight:500;opacity:0}
+/* the name, its rule and the line under it: the same type as Home's headline */
+#kn-intro .kn-lock{position:absolute;transform-origin:0 0;color:#EAF2EE}
+#kn-intro .kn-tl{position:absolute;left:0;white-space:nowrap;clip-path:inset(-30% -6% -14% -6%)}
+#kn-intro .kn-tl span{display:block;font-family:var(--f-display);font-weight:500;transform:translateY(115%)}
+/* the display font not in yet when the opening is built: the --f-display stack without Mona Sans, so the name is drawn in the face it was measured in */
+#kn-intro.kn-fb .kn-tl span,#kn-intro.kn-fb .kn-meas{font-family:"Bahnschrift","Avenir Next","Segoe UI Variable Display","Helvetica Neue",Arial,sans-serif}
+#kn-intro .kn-rule{position:absolute;left:0;background:#FFD83A;opacity:0}
+#kn-intro .kn-sub{position:absolute;left:0;white-space:nowrap;clip-path:inset(-10% -6% -40% -6%)}
+#kn-intro .kn-sub span{display:block;color:#BCD2CD;font-family:var(--f-body);font-weight:400;transform:translateY(-115%)}
+#kn-intro .kn-edge{position:absolute;left:0;width:100%;opacity:0}
+#kn-intro .kn-edge b{position:absolute;inset:0;background:#FFD83A;box-shadow:0 0 14px 1px rgba(255,216,58,.5)}
+/* skip */
+#kn-intro .kn-skip{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(16px,calc(env(safe-area-inset-bottom) + 8px));z-index:5;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 16px 0 18px;-webkit-appearance:none;appearance:none;border-radius:999px;border:1px solid rgba(234,242,238,.28);background:rgba(4,19,26,.8);color:#EAF2EE;font:600 14.5px/1 var(--f-body);letter-spacing:.01em;cursor:pointer;opacity:0}
+#kn-intro .kn-skip svg{width:14px;height:14px;display:block}
+#kn-intro .kn-skip:focus{outline:none}
+#kn-intro .kn-skip:focus-visible{outline:2px solid #FFD83A;outline-offset:3px}
+
+@media print{html.kn-cover body::after,#kn-intro{display:none!important}}

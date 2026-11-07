@@ -1073,7 +1073,8 @@
       UI.whenIdle(() => { if (!gone) { guil.prepUV(); UI.prepFlare(); } });
       /* First visit only: the lamp passes once over the rosette, so the hidden print has a chance to be noticed. */
       if (mode === 'new' && window.innerWidth > 1100) {
-        const t = setTimeout(() => {
+        let t = 0;
+        const pass = () => {
           if (gone || won) return;
           guil.prepUV();
           const r = hero.getBoundingClientRect();
@@ -1090,8 +1091,14 @@
             else { wrap.classList.remove('on'); sweep = 0; }
           };
           sweep = requestAnimationFrame(tick);
+        };
+        /* While the opening (intro.js) covers Home, a pass would go unseen: it waits until the opening ends. */
+        const after = () => { t = setTimeout(pass, 1400); };
+        t = setTimeout(() => {
+          if (K.Intro && K.Intro.current) document.addEventListener('kenari:intro-end', after, { once: true });
+          else pass();
         }, 1400);
-        stops.push(() => clearTimeout(t));
+        stops.push(() => { clearTimeout(t); document.removeEventListener('kenari:intro-end', after); });
       }
     } else {
       UI.whenIdle(() => { if (!gone) UI.prepFlare(); });

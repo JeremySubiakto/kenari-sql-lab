@@ -425,6 +425,9 @@
   window.addEventListener('hashchange', route);
   route();
   K.booted = true;
+  /* The opening (intro.js) plays over Home's first paint, which index.html covered. Either way the cover lifts here. */
+  try { if (K.Intro) K.Intro.start(); } catch (e) { console.error(e); }
+  document.documentElement.classList.remove('kn-cover');
   /* The page paints first. The engine loads after, and Run queues until it is ready. */
   requestAnimationFrame(() => setTimeout(() => Engine.ready, 0));
   UI.whenIdle(() => UI.prepFlare());

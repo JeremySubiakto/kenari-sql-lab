@@ -84,6 +84,7 @@ Hint button shows pips for how many are left. Hints open inline under the consol
 - **First Run on Home is a real win:** paper prints, the stamp lands (MISI 0.1), Mission 0.1 is recorded as cleared, Saldo goes to 1, and a line appears: "That was a real query. Now change branches to collectors." The main button becomes Mission 0.2.
 - Returning learners: Continue button naming the mission, a mini route with "you are here", and a stats row printed as ledger marks, not number tiles: rank with "21 missions to Data Reader" and a small bar, streak with week dots, Saldo, reviews due.
 - UV lamp: on pointer devices, the pointer reveals violet microprint on the hero rosette. Home only, and off for reduced motion and touch. Stop or simplify animations when off-screen. It must stay smooth on an office laptop.
+- Opening, "Collection day" (picked from three options): once a visit, when the visit starts on Home. Real loan rows, `WHERE dpd > 90` lights the overdue ones, they become one bar per branch and sort, the bars fold into the rule under the course name, which lands on the headline before the screen splits open. About 4.3 s, skippable by tap or key, and a 1.8 s fade for reduced motion. Home's first-visit lamp pass waits until it ends. See `Kenari.Intro` in APP-API.md.
 
 ## Journey
 
